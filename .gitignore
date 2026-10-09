@@ -1,0 +1,18 @@
+# Gradle and Kotlin (buildSrc) output, in any module
+build/
+.gradle/
+.kotlin/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Private keys must never be committed
+*.key
+keys/
