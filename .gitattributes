@@ -1,0 +1,10 @@
+# Store text with LF; check out with the platform's line endings.
+* text=auto
+
+# Shell scripts need LF or they break on macOS and Linux; batch files need CRLF on Windows.
+/gradlew text eol=lf
+*.sh     text eol=lf
+*.bat    text eol=crlf
+
+*.jar    binary
+*.png    binary
