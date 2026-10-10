@@ -15,6 +15,9 @@ public final class Main implements Callable<Integer> {
             description = "Where the note and app versions are kept (default: the OS's per-user app data folder).")
     Path dataDir;
 
+    @Option(names = "--handoff", hidden = true, description = "Started by an older version to take over from it.")
+    boolean handoff;
+
     @Option(
             names = {"-h", "--help"},
             usageHelp = true,
@@ -22,9 +25,9 @@ public final class Main implements Callable<Integer> {
     boolean help;
 
     @Override
-    public Integer call() throws IOException {
+    public Integer call() throws IOException, InterruptedException {
         var dataFolder = dataDir != null ? new DataFolder(dataDir) : DataFolder.forCurrentUser();
-        Startup.in(dataFolder).lockDataFolder().openNotepad();
+        Startup.in(dataFolder, handoff).awaitGo().lockDataFolder().openNotepad();
         return 0;
     }
 

@@ -73,6 +73,10 @@ jacoco {
 tasks.test {
     useJUnitPlatform()
     jvmArgs("--enable-native-access=ALL-UNNAMED") // Tests open real windows; see application above.
+    // The handoff tests start this app's real jar as a separate process.
+    val appJar = tasks.jar.flatMap { it.archiveFile }
+    inputs.file(appJar)
+    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Dphoenixnotes.appJar=${appJar.get().asFile}") })
     finalizedBy(tasks.jacocoTestReport)
 }
 tasks.jacocoTestCoverageVerification {

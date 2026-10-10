@@ -13,7 +13,7 @@ class StartupTest {
 
     @Test
     void theFirstCopyGetsTheDataFolder() throws Exception {
-        var startup = Startup.in(new DataFolder(folder)).lockDataFolder();
+        var startup = Startup.in(new DataFolder(folder), false).lockDataFolder();
 
         assertThat(startup.alreadyRunning()).isFalse();
     }
@@ -21,9 +21,9 @@ class StartupTest {
     @Test
     void aSecondCopyDoesNothing() throws Exception {
         var dataFolder = new DataFolder(folder);
-        Startup.in(dataFolder).lockDataFolder();
+        Startup.in(dataFolder, false).lockDataFolder();
 
-        var second = Startup.in(dataFolder).lockDataFolder();
+        var second = Startup.in(dataFolder, false).lockDataFolder();
 
         assertThat(second.alreadyRunning()).isTrue();
         assertThat(second.openNotepad()).isEmpty();

@@ -38,8 +38,11 @@ class InstallationTest {
     }
 
     @Test
-    void installsASignedReleaseAndMakesItCurrent() throws Exception {
+    void installsASignedReleaseWithoutMakingItCurrent() throws Exception {
         assertThat(install("1.0.5", "jar 1.0.5", current)).isEqualTo("1.0.5");
+        assertThat(installation.currentVersion()).isEmpty();
+
+        installation.makeCurrent("1.0.5");
 
         assertThat(installation.currentVersion()).hasValue("1.0.5");
         assertThat(installation.jar("1.0.5")).hasContent("jar 1.0.5");

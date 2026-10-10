@@ -69,8 +69,9 @@ final class Installation {
     }
 
     /**
-     * Installs a downloaded release and makes it current, but only if its manifest is signed by the
-     * current key and the jar matches it. Returns the installed version.
+     * Installs a downloaded release, but only if its manifest is signed by the current key and the jar
+     * matches it. It doesn't become current until {@link #makeCurrent} (after a successful handoff).
+     * Returns the installed version.
      */
     String install(byte[] manifest, String signature, Path downloadedJar) throws IOException, UntrustedException {
         var release = Release.verify(manifest, signature, List.of(trustedKeys().currentKey()));
@@ -80,8 +81,12 @@ final class Installation {
         Files.write(versionFolder.resolve("manifest.json"), manifest);
         Files.writeString(versionFolder.resolve("manifest.json.sig"), signature);
         Files.move(downloadedJar, jar(release.version()), StandardCopyOption.REPLACE_EXISTING);
-        DataFolder.write(folder.current(), release.version().getBytes(StandardCharsets.UTF_8));
         return release.version();
+    }
+
+    /** Makes a version the one to run, with an atomic rename. */
+    void makeCurrent(String version) throws IOException {
+        DataFolder.write(folder.current(), version.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

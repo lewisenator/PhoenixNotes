@@ -2,9 +2,11 @@ package com.lewisenator.phoenixnotes;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.BorderLayout;
+import java.awt.Rectangle;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -28,7 +30,7 @@ final class Notepad {
     private final JLabel status = new JLabel();
     private final Timer autosave = new Timer(SAVE_DELAY_MILLIS, event -> save());
 
-    private Notepad(Note note, String version, String savedText) {
+    private Notepad(Note note, String version, String savedText, Optional<Rectangle> window) {
         this.note = note;
         this.version = version;
         text.setText(savedText);
@@ -44,8 +46,11 @@ final class Notepad {
         frame.setTitle("Phoenix Notes " + version);
         frame.add(new JScrollPane(text), BorderLayout.CENTER);
         frame.add(status, BorderLayout.SOUTH);
-        frame.setSize(640, 480);
-        frame.setLocationByPlatform(true);
+        // After a handoff, open exactly where the old version's window was.
+        window.ifPresentOrElse(frame::setBounds, () -> {
+            frame.setSize(640, 480);
+            frame.setLocationByPlatform(true);
+        });
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             @Override
@@ -82,13 +87,16 @@ final class Notepad {
         status.setText("Version " + version + " · " + message);
     }
 
-    /** Builds and shows the window on Swing's event thread, where all UI work must happen. */
-    static Notepad open(Note note, String version) throws IOException {
+    /**
+     * Builds and shows the window on Swing's event thread, where all UI work must happen. Opens at
+     * {@code window} if given (after a handoff), otherwise wherever the OS puts new windows.
+     */
+    static Notepad open(Note note, String version, Optional<Rectangle> window) throws IOException {
         FlatLightLaf.setup();
         var savedText = note.read();
         return CompletableFuture.supplyAsync(
                         () -> {
-                            var notepad = new Notepad(note, version, savedText);
+                            var notepad = new Notepad(note, version, savedText, window);
                             notepad.frame.setVisible(true);
                             return notepad;
                         },

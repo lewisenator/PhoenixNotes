@@ -7,6 +7,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.event.WindowEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import javax.swing.SwingUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,7 @@ class NotepadTest {
         assumeFalse(GraphicsEnvironment.isHeadless(), "needs a display");
         note = new Note(folder.resolve("note.txt"));
         note.write("hello");
-        notepad = Notepad.open(note, "1.0.42");
+        notepad = Notepad.open(note, "1.0.42", Optional.empty());
     }
 
     @AfterEach
