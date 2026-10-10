@@ -15,3 +15,5 @@ Why things are the way they are. New records start from [template.md](template.m
 | 0009 | [Signing keys rotate by pre-rotation, with a break-glass key](0009-key-rotation.md) | Accepted |
 | 0010 | [Key commands are written in Java, not shell scripts](0010-key-commands-in-java.md) | Accepted |
 | 0011 | [Every merge to main is a release, numbered by commit count](0011-version-numbers.md) | Accepted |
+| 0012 | [Versions are installed side by side and verified before every run](0012-installed-versions.md) | Accepted |
+| 0013 | [What the update mechanism defends against](0013-threat-model.md) | Accepted |
