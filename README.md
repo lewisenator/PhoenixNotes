@@ -1,9 +1,13 @@
+<img src="app/src/packaging/icon.png" alt="" width="96" align="right">
+
 # Phoenix Notes
 
 A desktop notepad that keeps itself up to date. It downloads signed releases, verifies them, and
 hands over to the new version while it's running, falling back to the old one if the new one fails.
 
 An exercise in safe, seamless self-updating software.
+
+![Phoenix Notes on macOS, showing a note and the version it's running](docs/screenshot.png)
 
 **Status:** work in progress. Design decisions are in [docs/decisions](docs/decisions/README.md).
 
