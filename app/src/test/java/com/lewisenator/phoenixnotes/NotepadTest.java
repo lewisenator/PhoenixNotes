@@ -79,4 +79,27 @@ class NotepadTest {
             assertThat(notepad.status().getText()).contains("Couldn't save");
         });
     }
+
+    @Test
+    void coversTheWindowAndStopsTypingWhileUpdating() throws Exception {
+        notepad.showUpdating("1.0.43");
+
+        SwingUtilities.invokeAndWait(() -> {
+            assertThat(notepad.frame().getGlassPane().isVisible()).isTrue();
+            assertThat(notepad.overlay().message().getText()).isEqualTo("Updating to 1.0.43…");
+            assertThat(notepad.text().isEditable()).isFalse();
+        });
+    }
+
+    @Test
+    void showsAMessageAndLetsTypingCarryOn() throws Exception {
+        notepad.showUpdating("1.0.43");
+        notepad.showBriefly("Update to 1.0.43 failed — still on 1.0.42");
+
+        SwingUtilities.invokeAndWait(() -> {
+            assertThat(notepad.overlay().isVisible()).isTrue();
+            assertThat(notepad.overlay().message().getText()).isEqualTo("Update to 1.0.43 failed — still on 1.0.42");
+            assertThat(notepad.text().isEditable()).isTrue();
+        });
+    }
 }

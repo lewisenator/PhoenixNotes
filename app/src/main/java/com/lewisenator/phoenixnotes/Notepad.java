@@ -24,12 +24,17 @@ final class Notepad {
     /** Saves this long after the last keystroke, so typing doesn't write the file on every key. */
     private static final int SAVE_DELAY_MILLIS = 1000;
 
+    /** How long a message over the window stays up. */
+    private static final int MESSAGE_MILLIS = 4000;
+
     private final Note note;
     private final String version;
     private final JFrame frame = new JFrame();
     private final JTextArea text = new JTextArea();
     private final JLabel status = new JLabel();
     private final Timer autosave = new Timer(SAVE_DELAY_MILLIS, event -> save());
+    private final Overlay overlay = new Overlay();
+    private final Timer hideOverlay = new Timer(MESSAGE_MILLIS, event -> overlay.setVisible(false));
 
     private Notepad(Note note, String version, String savedText, Optional<Rectangle> window) {
         this.note = note;
@@ -44,6 +49,8 @@ final class Notepad {
         status.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         showStatus("Saved");
 
+        hideOverlay.setRepeats(false);
+        frame.setGlassPane(overlay);
         frame.setTitle("Phoenix Notes " + version);
         frame.add(new JScrollPane(text), BorderLayout.CENTER);
         frame.add(status, BorderLayout.SOUTH);
@@ -81,6 +88,27 @@ final class Notepad {
         return onEventThread(frame::getBounds);
     }
 
+    /**
+     * Shows "Updating to X…" over the window and stops typing, so nothing is typed after the note is
+     * saved for the new version. Stays up until this version exits, or {@link #showBriefly} replaces it.
+     */
+    void showUpdating(String newVersion) {
+        SwingUtilities.invokeLater(() -> {
+            hideOverlay.stop();
+            text.setEditable(false);
+            overlay.show("Updating to " + newVersion + "…", true);
+        });
+    }
+
+    /** Shows a message over the window for a few seconds, like "Updated to 1.0.13". */
+    void showBriefly(String message) {
+        SwingUtilities.invokeLater(() -> {
+            text.setEditable(true);
+            overlay.show(message, false);
+            hideOverlay.restart();
+        });
+    }
+
     JFrame frame() {
         return frame;
     }
@@ -91,6 +119,10 @@ final class Notepad {
 
     JLabel status() {
         return status;
+    }
+
+    Overlay overlay() {
+        return overlay;
     }
 
     private void showStatus(String message) {

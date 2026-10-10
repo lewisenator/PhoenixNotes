@@ -87,6 +87,8 @@ class UpdateTest {
         assertThat(exited).as("exited").isFalse();
         assertThat(installation.currentVersion()).isEmpty();
         assertThat(installation.hasFailed("1.0.6")).isTrue();
+        SwingUtilities.invokeAndWait(() ->
+                assertThat(notepad.overlay().message().getText()).isEqualTo("Update to 1.0.6 failed — still on 1.0.5"));
         assertThat(new AppLock(folder.lock()).take(Duration.ZERO))
                 .as("still holds the data folder")
                 .isFalse();

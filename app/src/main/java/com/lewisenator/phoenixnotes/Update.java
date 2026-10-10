@@ -96,9 +96,11 @@ final class Update {
             return this;
         }
         var version = release.get().version();
+        notepad.showUpdating(version);
         try {
             Handoff.handOver(installation.jar(version), installation.folder(), lock, Optional.of(notepad));
         } catch (IOException e) {
+            notepad.showBriefly("Update to " + version + " failed — still on " + runningVersion);
             installation.markFailed(version);
             Log.step("hand off", "failed, keeping " + runningVersion + ": " + e.getMessage());
             return this;

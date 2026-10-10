@@ -112,6 +112,7 @@ final class Startup {
         var notepad = Notepad.open(new Note(dataFolder.note()), version, window);
         Log.step("open notepad", "ok");
         if (handingOver) {
+            notepad.showBriefly("Updated to " + version);
             System.out.println(Handoff.RUNNING);
         }
         return Optional.of(notepad);
