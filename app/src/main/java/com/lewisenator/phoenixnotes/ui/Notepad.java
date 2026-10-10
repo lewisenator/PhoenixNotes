@@ -5,7 +5,9 @@ import com.lewisenator.phoenixnotes.DataFolder;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.FileDialog;
+import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.Taskbar;
 import java.awt.Toolkit;
 import java.awt.desktop.QuitStrategy;
 import java.awt.event.ActionListener;
@@ -18,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -61,7 +64,8 @@ public final class Notepad {
     private final Overlay overlay = new Overlay();
     private final Timer hideOverlay = new Timer(MESSAGE_MILLIS, event -> overlay.setVisible(false));
 
-    private Notepad(DataFolder folder, Note note, String version, String savedText, Optional<Rectangle> window) {
+    private Notepad(
+            DataFolder folder, Note note, String version, String savedText, Optional<Rectangle> window, Image icon) {
         this.folder = folder;
         this.version = version;
         this.note = note;
@@ -76,6 +80,7 @@ public final class Notepad {
         statusLine.add(updateStatus, BorderLayout.EAST);
 
         hideOverlay.setRepeats(false);
+        frame.setIconImage(icon);
         frame.setGlassPane(overlay);
         frame.setJMenuBar(menuBar());
         frame.add(new JScrollPane(text), BorderLayout.CENTER);
@@ -301,10 +306,16 @@ public final class Notepad {
             // ⌘Q closes the window, which saves, instead of exiting straight away.
             Desktop.getDesktop().setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
         }
+        // The window's icon, and on macOS the Dock's: a version started by a handoff runs on plain
+        // `java`, which would otherwise show Java's icon.
+        var icon = ImageIO.read(Notepad.class.getResource("/icon.png"));
+        if (Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)) {
+            Taskbar.getTaskbar().setIconImage(icon);
+        }
         var note = Note.last(folder);
         var savedText = note.read();
         return onEventThread(() -> {
-            var notepad = new Notepad(folder, note, version, savedText, window);
+            var notepad = new Notepad(folder, note, version, savedText, window, icon);
             notepad.frame.setVisible(true);
             return notepad;
         });

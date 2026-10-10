@@ -101,3 +101,50 @@ jobs:
           gh release create "v$VERSION"
           "app/build/libs/app-$VERSION.jar" release/manifest.json release/manifest.json.sig trust/keys.json
           --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
+
+  # Each OS builds its own installer, with its own Java runtime, and adds it to the release.
+  # See docs/decisions/0017-installers.md.
+  installers:
+    name: Installer (${{ matrix.os }})
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v6
+
+      # jpackage builds .msi files with WiX, and .deb files with fakeroot.
+      - name: Packaging tools (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add --global WixToolset.Util.wixext/5.0.2 WixToolset.UI.wixext/5.0.2
+      - name: Packaging tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y fakeroot
+
+      - name: Build
+        shell: bash
+        run: |
+          VERSION="1.0.$(git rev-list --count HEAD)"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          ./gradlew :app:installer -PreleaseVersion="$VERSION"
+
+      # Release assets, not workflow artifacts, so they don't use up Actions storage.
+      - name: Upload
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "v$VERSION" app/build/installer/*
+

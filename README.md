@@ -7,6 +7,35 @@ An exercise in safe, seamless self-updating software.
 
 **Status:** work in progress. Design decisions are in [docs/decisions](docs/decisions/README.md).
 
+## Installing
+
+Download the installer for your computer from the
+[latest release](https://github.com/lewisenator/PhoenixNotes/releases/latest). Each one includes
+its own Java, and installs for you alone, without admin rights (except on Linux). After that the
+app keeps itself up to date: an old installer always starts the newest version it has downloaded.
+
+| OS | File | Install | Uninstall |
+|----|------|---------|-----------|
+| macOS (Apple silicon) | `Phoenix Notes-<version>.dmg` | Open it and drag the app to Applications. | Move the app to the Bin. |
+| Windows | `Phoenix Notes-<version>.msi` | Run it. It adds a Start menu entry and a desktop shortcut. | Settings → Apps. |
+| Linux (Debian, Ubuntu) | `phoenix-notes_<version>_amd64.deb` | `sudo apt install ./phoenix-notes_*.deb` | `sudo apt remove phoenix-notes` |
+
+The installers aren't signed by Apple or Microsoft, so the first launch needs one extra step:
+
+- **macOS:** it says the app can't be checked for malware. Open *System Settings → Privacy &
+  Security*, and click *Open Anyway* next to Phoenix Notes.
+- **Windows:** SmartScreen says it protected your PC. Click *More info*, then *Run anyway*.
+
+Updates themselves are always checked against the app's signing keys, so these warnings are about
+the installer only ([decision 0017](docs/decisions/0017-installers.md)).
+
+**Anywhere else** (an Intel Mac, say), install Java 25 and run the release's jar:
+`java -jar app-<version>.jar`. It updates itself the same way.
+
+Uninstalling leaves your note and downloaded versions behind, in
+`~/Library/Application Support/PhoenixNotes` (macOS), `%LOCALAPPDATA%\PhoenixNotes` (Windows) or
+`~/.local/share/phoenixnotes` (Linux). Files you opened are never touched.
+
 ## Layout
 
 | Module     | What it is                                                           |
@@ -20,6 +49,12 @@ Needs a JDK 17 or newer to run Gradle; the build downloads Java 25 if it isn't i
 
 ```bash
 ./gradlew build
+```
+
+To build the installer for the computer you're on (into `app/build/installer`):
+
+```bash
+./gradlew :app:installer
 ```
 
 ## Signing keys

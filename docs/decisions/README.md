@@ -20,3 +20,4 @@ Why things are the way they are. New records start from [template.md](template.m
 | 0014 | [The running version hands over to the new one over stdin and stdout](0014-handoff.md) | Accepted |
 | 0015 | [Updates are checked for regularly and applied straight away](0015-automatic-updates.md) | Accepted |
 | 0016 | [Any UTF-8 text file can be opened as the note](0016-open-any-text-file.md) | Accepted |
+| 0017 | [Every release has an unsigned installer for each OS, with its own Java](0017-installers.md) | Accepted |
