@@ -28,7 +28,10 @@ class ExternalToolsTest {
         Vault.onePassword(recorder, "Private").save("Item", keys);
 
         assertThat(commands).containsExactly(List.of("op", "item", "create", "--vault", "Private", "-"));
-        assertThat(stdins.getFirst()).contains(privateKey).contains("\"title\":\"Item\"");
+        assertThat(stdins.getFirst())
+                .contains(privateKey)
+                .contains("\"title\":\"Item\"")
+                .contains("\"label\":\"private key\"");
         assertThat(commands.getFirst()).noneMatch(argument -> argument.contains(privateKey));
     }
 

@@ -49,6 +49,7 @@ interface Vault {
                                 Map.of(
                                         "id", "credential",
                                         "type", "CONCEALED",
+                                        "label", "private key",
                                         "value", Keys.encode(keys.getPrivate())),
                                 Map.of(
                                         "id", "publicKey",
