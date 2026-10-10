@@ -11,16 +11,38 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The old version's side of handing over to a new one (see docs/decisions/0004). The new version
- * runs as a child process, and they talk over its stdin and stdout:
+ * Hands the app over from the running version (<b>old</b>) to a newly installed one (<b>new</b>),
+ * without a separate launcher (see docs/decisions/0004-one-self-updating-program.md).
+ *
+ * <p>Old starts new as a child process, and they talk over new's stdin and stdout. This class is
+ * old's side; new's side is the handoff mode of {@link Startup} ({@code --handoff}).
+ *
+ * <p>A successful handoff, step by step:
  *
  * <pre>
- * new → "ready"          it has started
- * old → "go x y w h"     old has saved the note and released the data folder; its window was here
- * new → "running"        new has taken the data folder and opened its window there
+ *   OLD (running version)                       NEW (child process)
+ *   ─────────────────────                       ───────────────────
+ * 1 Handoff.start(jar, folder)
+ *     runs: java -jar versions/v/app.jar
+ *           --handoff --data-dir folder   ──►   Main: Startup.in(folder, true)
+ * 2                                             .awaitGo()      prints "ready",
+ *   awaitReady()               ◄── "ready" ──     then waits for "go"
+ * 3 save the note, note the window position,
+ *   release the data-folder lock
+ *   go(window)             ── "go x y w h" ──►    reads the window position
+ * 4                                             .lockDataFolder()   retries for up to 5s
+ *                                               .openNotepad()      opens at x, y, w, h,
+ *   awaitRunning()            ◄── "running" ──    then prints "running"
+ * 5 Installation.makeCurrent(new version)
+ *   exit                                        keeps running as the app
  * </pre>
  *
- * If an answer doesn't come in time, or the new version exits, the old one stops it and carries on.
+ * <p>Old's steps 3 and 5 belong to whoever drives the handoff (the {@code Update} workflow); this
+ * class does the starting, talking and timing.
+ *
+ * <p>If new doesn't say "ready" within 30 seconds or "running" within 15, or exits first, old
+ * calls {@link #abandon()} to stop it, takes the lock back, and carries on as the app. The new
+ * version never became current, so the next start still runs old.
  */
 final class Handoff {
 
