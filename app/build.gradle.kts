@@ -32,8 +32,9 @@ application {
 // Quality checks, all run by `./gradlew check`. The same block is in signing/build.gradle.kts,
 // except for the coverage minimum: the app includes Swing code that's thin and lightly tested.
 tasks.withType<JavaCompile>().configureEach {
-    // All warnings fail the build, except "serial": nothing here is ever serialized.
-    options.compilerArgs.addAll(listOf("-Xlint:all,-serial", "-Werror"))
+    // All warnings fail the build, except "serial" (nothing is ever serialized) and "processing"
+    // (it flags annotations no processor handles, like picocli's, which are read at runtime).
+    options.compilerArgs.addAll(listOf("-Xlint:all,-serial,-processing", "-Werror"))
 }
 spotless {
     java {
@@ -45,6 +46,7 @@ jacoco {
 }
 tasks.test {
     useJUnitPlatform()
+    jvmArgs("--enable-native-access=ALL-UNNAMED") // Tests open real windows; see application above.
     finalizedBy(tasks.jacocoTestReport)
 }
 tasks.jacocoTestCoverageVerification {

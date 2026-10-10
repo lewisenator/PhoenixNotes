@@ -50,14 +50,14 @@ class KeyChainTest {
 
     @Test
     void anAppCatchesUpAcrossSeveralRotations() throws Exception {
-        var second = Keys.generate();
-        var published =
-                chain.rotate(next.getPrivate(), encode(second)).rotate(second.getPrivate(), encode(Keys.generate()));
+        var nextAfterNext = Keys.generate();
+        var published = chain.rotate(next.getPrivate(), encode(nextAfterNext))
+                .rotate(nextAfterNext.getPrivate(), encode(Keys.generate()));
 
         var caughtUp = chain.extend(KeyChain.read(published.toJson()));
 
         assertThat(caughtUp.latest().number()).isEqualTo(2);
-        assertThat(caughtUp.currentKey()).isEqualTo(second.getPublic());
+        assertThat(caughtUp.currentKey()).isEqualTo(nextAfterNext.getPublic());
     }
 
     @Test

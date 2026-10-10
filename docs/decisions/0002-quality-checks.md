@@ -13,8 +13,9 @@ The code has to stay correct and consistent while it changes quickly, including 
 
 - **formatting** that doesn't match the formatter ([0003](0003-code-formatter.md); `./gradlew spotlessApply` fixes it);
 - **bug patterns** found by Error Prone at compile time;
-- **any compiler warning** (`-Xlint:all -Werror`), except `serial`: nothing is ever serialized, so
-  it would only demand boilerplate IDs on every exception class;
+- **any compiler warning** (`-Xlint:all -Werror`), except `serial` (nothing is ever serialized, so it
+  would only demand boilerplate IDs) and `processing` (it flags annotations, like picocli's, that are
+  read at runtime rather than by an annotation processor);
 - **line coverage** below 90% in `signing` and 70% in `app`.
 
 ## Consequences

@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    application
     jacoco
     alias(libs.plugins.spotless)
     alias(libs.plugins.errorprone)
@@ -13,6 +14,7 @@ java {
 
 dependencies {
     implementation(libs.jackson)
+    implementation(libs.picocli)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
     errorprone(libs.errorprone)
@@ -23,10 +25,15 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
+application {
+    mainClass = "com.lewisenator.phoenixnotes.signing.SigningTool"
+}
+
 // Quality checks, all run by `./gradlew check`. The same block is in app/build.gradle.kts.
 tasks.withType<JavaCompile>().configureEach {
-    // All warnings fail the build, except "serial": nothing here is ever serialized.
-    options.compilerArgs.addAll(listOf("-Xlint:all,-serial", "-Werror"))
+    // All warnings fail the build, except "serial" (nothing is ever serialized) and "processing"
+    // (it flags annotations no processor handles, like picocli's, which are read at runtime).
+    options.compilerArgs.addAll(listOf("-Xlint:all,-serial,-processing", "-Werror"))
 }
 spotless {
     java {
