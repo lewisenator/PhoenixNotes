@@ -1,5 +1,6 @@
 package com.lewisenator.phoenixnotes;
 
+import com.lewisenator.phoenixnotes.signing.UntrustedException;
 import java.awt.Rectangle;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,21 +18,26 @@ final class Startup {
     /** The version of a build run from source, which doesn't update itself. */
     static final String DEV = "dev";
 
+    private final Installation installation;
     private final DataFolder dataFolder;
     private final boolean handingOver;
+    private final String version;
     private final AppLock lock;
     private boolean alreadyRunning;
+    private boolean handedOff;
     private Optional<Rectangle> window = Optional.empty();
 
-    private Startup(DataFolder dataFolder, boolean handingOver) {
-        this.dataFolder = dataFolder;
+    private Startup(Installation installation, boolean handingOver, String version) {
+        this.installation = installation;
+        this.dataFolder = installation.folder();
         this.handingOver = handingOver;
+        this.version = version;
         this.lock = new AppLock(dataFolder.lock());
     }
 
     /**
      * When an older version started us to take over (see {@link Handoff}): say we're ready, then wait
-     * for "go" and the old window's position. Otherwise, skipped.
+     * for "go" and, if it had a window, its position. Otherwise, skipped.
      */
     Startup awaitGo() throws IOException {
         if (!handingOver) {
@@ -39,10 +45,13 @@ final class Startup {
         }
         System.out.println(Handoff.READY);
         var in = new Scanner(System.in, StandardCharsets.UTF_8);
-        if (!in.hasNext() || !in.next().equals(Handoff.GO)) {
+        var go = new Scanner(in.hasNextLine() ? in.nextLine() : "");
+        if (!go.hasNext() || !go.next().equals(Handoff.GO)) {
             throw new IOException("The previous version didn't say go");
         }
-        window = Optional.of(new Rectangle(in.nextInt(), in.nextInt(), in.nextInt(), in.nextInt()));
+        if (go.hasNextInt()) {
+            window = Optional.of(new Rectangle(go.nextInt(), go.nextInt(), go.nextInt(), go.nextInt()));
+        }
         Log.step("await go", "taking over from the previous version");
         return this;
     }
@@ -62,12 +71,45 @@ final class Startup {
         return this;
     }
 
-    /** Opens the notepad, unless another copy of the app is already running. */
+    /**
+     * Runs the newest version instead of this one, if one is installed: an old installer still starts
+     * the version that last updated it. That version is re-verified first, and if it doesn't verify or
+     * doesn't take over, we carry on as ourselves. Skipped during a handoff.
+     */
+    Startup handOffToCurrentVersion() throws IOException, InterruptedException {
+        if (handingOver || alreadyRunning) {
+            return this;
+        }
+        var current = installation.currentVersion();
+        if (version.equals(DEV) || current.isEmpty() || installation.hasFailed(current.get())) {
+            Log.step("hand off to current", "nothing newer installed");
+            return this;
+        }
+        try {
+            if (!installation.verify(current.get()).isNewerThan(version)) {
+                Log.step("hand off to current", "this is the newest");
+                return this;
+            }
+            Handoff.handOver(installation.jar(current.get()), dataFolder, lock, Optional.empty());
+        } catch (UntrustedException e) {
+            Log.step("hand off to current", current.get() + " doesn't verify: " + e.getMessage());
+            return this;
+        } catch (IOException e) {
+            installation.markFailed(current.get());
+            Log.step("hand off to current", current.get() + " failed: " + e.getMessage());
+            return this;
+        }
+        handedOff = true;
+        Log.step("hand off to current", current.get() + " is running; exiting");
+        return this;
+    }
+
+    /** Opens the notepad, unless another copy of the app is running, or another version took over. */
     Optional<Notepad> openNotepad() throws IOException {
-        if (alreadyRunning) {
+        if (alreadyRunning || handedOff) {
             return Optional.empty();
         }
-        var notepad = Notepad.open(new Note(dataFolder.note()), version(), window);
+        var notepad = Notepad.open(new Note(dataFolder.note()), version, window);
         Log.step("open notepad", "ok");
         if (handingOver) {
             System.out.println(Handoff.RUNNING);
@@ -79,10 +121,22 @@ final class Startup {
         return alreadyRunning;
     }
 
+    boolean handedOff() {
+        return handedOff;
+    }
+
     /** @param handingOver whether an older version started this one to take over from it */
-    static Startup in(DataFolder dataFolder, boolean handingOver) {
-        Log.step("start", "Phoenix Notes " + version() + ", data in " + dataFolder.path());
-        return new Startup(dataFolder, handingOver);
+    static Startup in(DataFolder dataFolder, boolean handingOver) throws IOException, UntrustedException {
+        return in(Installation.in(dataFolder), handingOver, version());
+    }
+
+    /** @param version this app's version; tests pass one, as if running an installed release */
+    static Startup in(Installation installation, boolean handingOver, String version) {
+        Log.step(
+                "start",
+                "Phoenix Notes " + version + ", data in "
+                        + installation.folder().path());
+        return new Startup(installation, handingOver, version);
     }
 
     /** This app's version, from its jar's manifest, or "dev" when running from source. */

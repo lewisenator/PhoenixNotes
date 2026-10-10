@@ -96,18 +96,9 @@ final class Update {
             return this;
         }
         var version = release.get().version();
-        var handoff = Handoff.start(installation.jar(version), installation.folder());
         try {
-            handoff.awaitReady();
-            var window = notepad.saveForHandoff();
-            lock.release();
-            handoff.go(window);
-            handoff.awaitRunning();
+            Handoff.handOver(installation.jar(version), installation.folder(), lock, Optional.of(notepad));
         } catch (IOException e) {
-            handoff.abandon();
-            if (!lock.take(Handoff.LOCK_WAIT)) {
-                throw new IOException("Couldn't take the data folder back", e);
-            }
             installation.markFailed(version);
             Log.step("hand off", "failed, keeping " + runningVersion + ": " + e.getMessage());
             return this;

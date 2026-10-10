@@ -10,6 +10,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class HandoffTest {
         handoff = Handoff.start(APP_JAR, folder);
 
         handoff.awaitReady();
-        handoff.go(WINDOW);
+        handoff.go(Optional.of(WINDOW));
         handoff.awaitRunning();
 
         assertThat(canLock(folder)).as("the new version holds the data folder").isFalse();
@@ -69,7 +70,7 @@ class HandoffTest {
             assertThat(channel.lock()).isNotNull();
             handoff = Handoff.start(APP_JAR, folder);
             handoff.awaitReady();
-            handoff.go(WINDOW);
+            handoff.go(Optional.of(WINDOW));
 
             assertThatIOException().isThrownBy(handoff::awaitRunning).withMessageContaining("didn't say running");
         }

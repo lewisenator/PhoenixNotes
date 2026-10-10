@@ -111,7 +111,7 @@ final class Installation {
      * Re-checks an installed version before it runs: its manifest is signed by a key trusted for
      * installed versions, it's for this version, and the jar still matches it.
      */
-    void verify(String version) throws IOException, UntrustedException {
+    Release verify(String version) throws IOException, UntrustedException {
         var versionFolder = folder.version(version);
         var release = Release.verify(
                 Files.readAllBytes(versionFolder.resolve("manifest.json")),
@@ -121,6 +121,7 @@ final class Installation {
             throw new UntrustedException("Manifest is for " + release.version() + ", not " + version);
         }
         release.checkJar(jar(version));
+        return release;
     }
 
     /** The installation in a data folder, trusting the key chain built into this app (trust/keys.json). */

@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -22,26 +23,28 @@ import java.util.concurrent.TimeUnit;
  * <pre>
  *   OLD (running version)                       NEW (child process)
  *   ─────────────────────                       ───────────────────
+ *   Handoff.handOver(jar, folder, lock, notepad) runs old's steps 1 to 4:
  * 1 Handoff.start(jar, folder)
  *     runs: java -jar versions/v/app.jar
  *           --handoff --data-dir folder   ──►   Main: Startup.in(folder, true)
  * 2                                             .awaitGo()      prints "ready",
  *   awaitReady()               ◄── "ready" ──     then waits for "go"
- * 3 save the note, note the window position,
- *   release the data-folder lock
+ * 3 notepad.saveForHandoff(), if one is open
+ *   lock.release()
  *   go(window)             ── "go x y w h" ──►    reads the window position
+ *                            (or just "go")       (or lets the OS place it)
  * 4                                             .lockDataFolder()   retries for up to 5s
  *                                               .openNotepad()      opens at x, y, w, h,
  *   awaitRunning()            ◄── "running" ──    then prints "running"
- * 5 Installation.makeCurrent(new version)
- *   exit                                        keeps running as the app
+ * 5 exit                                        keeps running as the app
  * </pre>
  *
- * <p>Old's steps 3 and 5 belong to whoever drives the handoff (the {@code Update} workflow); this
- * class does the starting, talking and timing.
+ * <p>Old is either a running app that found an update ({@link Update#handOff}, which also makes new
+ * current before exiting), or an older install starting up ({@link Startup#handOffToCurrentVersion},
+ * which has no window yet).
  *
- * <p>If new doesn't say "ready" within 30 seconds or "running" within 15, or exits first, old
- * calls {@link #abandon()} to stop it, takes the lock back, and carries on as the app. The new
+ * <p>If new doesn't say "ready" within 30 seconds or "running" within 15, or exits first, old stops
+ * it, takes the lock back, marks that version as failed, and carries on as the app. An update's
  * version never became current, so the next start still runs old.
  */
 final class Handoff {
@@ -68,12 +71,15 @@ final class Handoff {
         await(READY, READY_TIMEOUT);
     }
 
-    /** Tells the new version to take over, and where to put its window. */
-    void go(Rectangle window) throws IOException {
+    /**
+     * Tells the new version to take over, and where to put its window: {@code go x y w h}, or just
+     * {@code go} to let the OS place it.
+     */
+    void go(Optional<Rectangle> window) throws IOException {
         var input = process.getOutputStream();
-        input.write("%s %d %d %d %d%n"
-                .formatted(GO, window.x, window.y, window.width, window.height)
-                .getBytes(StandardCharsets.UTF_8));
+        var position = window.map(w -> " %d %d %d %d".formatted(w.x, w.y, w.width, w.height))
+                .orElse("");
+        input.write((GO + position + "\n").getBytes(StandardCharsets.UTF_8));
         input.flush();
     }
 
@@ -96,6 +102,30 @@ final class Handoff {
                 .join();
         if (!heard) {
             throw new IOException("The new version didn't say " + message + " within " + timeout);
+        }
+    }
+
+    /**
+     * Old's whole side, steps 1 to 4: starts the version in {@code jar} and hands it the data folder.
+     * Saves the notepad first, if one is open, so the new version opens with what was typed, where the
+     * window was. If new doesn't take over, stops it, takes the data folder back, and throws.
+     */
+    static void handOver(Path jar, DataFolder folder, AppLock lock, Optional<Notepad> notepad)
+            throws IOException, InterruptedException {
+        var handoff = start(jar, folder);
+        try {
+            handoff.awaitReady();
+            var window =
+                    notepad.isPresent() ? Optional.of(notepad.get().saveForHandoff()) : Optional.<Rectangle>empty();
+            lock.release();
+            handoff.go(window);
+            handoff.awaitRunning();
+        } catch (IOException e) {
+            handoff.abandon();
+            if (!lock.take(LOCK_WAIT)) {
+                throw new IllegalStateException("Couldn't take the data folder back", e);
+            }
+            throw e;
         }
     }
 
