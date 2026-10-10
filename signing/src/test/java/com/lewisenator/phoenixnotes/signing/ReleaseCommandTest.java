@@ -56,16 +56,19 @@ class ReleaseCommandTest {
 
     @Test
     void needsTheSigningKey() {
-        var exitCode =
-                SigningTool.commandLine(Map.of()).setErr(new PrintWriter(err)).execute(args());
+        var exitCode = SigningTool.commandLine(Map.of(), null, null, null, null)
+                .setErr(new PrintWriter(err))
+                .execute(args());
 
         assertThat(exitCode).isEqualTo(1);
-        assertThat(err.toString()).contains(ReleaseCommand.SIGNING_KEY + " is not set");
+        assertThat(err.toString()).contains(CiSecrets.SIGNING_KEY + " is not set");
     }
 
     private int run(KeyPair signer) {
-        var env = Map.of(ReleaseCommand.SIGNING_KEY, Keys.encode(signer.getPrivate()));
-        return SigningTool.commandLine(env).setErr(new PrintWriter(err)).execute(args());
+        var env = Map.of(CiSecrets.SIGNING_KEY, Keys.encode(signer.getPrivate()));
+        return SigningTool.commandLine(env, null, null, null, null)
+                .setErr(new PrintWriter(err))
+                .execute(args());
     }
 
     private String[] args() {

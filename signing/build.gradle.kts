@@ -29,6 +29,24 @@ application {
     mainClass = "com.lewisenator.phoenixnotes.signing.SigningTool"
 }
 
+// ./gradlew keysInit, keysRotate, keysBreakGlass: manage the signing keys (see the README).
+// They use the op (1Password) and gh (GitHub) commands, which must be installed and signed in.
+mapOf(
+    "keysInit" to "init",
+    "keysRotate" to "rotate",
+    "keysBreakGlass" to "break-glass",
+).forEach { (task, command) ->
+    tasks.register<JavaExec>(task) {
+        group = "keys"
+        description = "Runs `signing keys $command`."
+        classpath = sourceSets.main.get().runtimeClasspath
+        mainClass = application.mainClass
+        workingDir = rootDir
+        args("keys", "--keys", "trust/keys.json", command)
+        standardInput = System.`in` // break glass asks for confirmation
+    }
+}
+
 // Quality checks, all run by `./gradlew check`. The same block is in app/build.gradle.kts.
 tasks.withType<JavaCompile>().configureEach {
     // All warnings fail the build, except "serial" (nothing is ever serialized) and "processing"

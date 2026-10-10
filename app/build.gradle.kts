@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.errorprone)
 }
 
+// CI passes the release version, 1.0.<commit count>; local builds are "dev".
+version = providers.gradleProperty("releaseVersion").getOrElse("dev")
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -27,6 +30,22 @@ application {
     mainClass = "com.lewisenator.phoenixnotes.Main"
     // FlatLaf loads a small native library for window decorations; Java 24+ asks apps to opt in.
     applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+}
+
+// A release is one self-contained jar: updates download exactly one file and run it with `java -jar`.
+tasks.jar {
+    from({ configurations.runtimeClasspath.get().map { zipTree(it) } }) {
+        exclude("META-INF/MANIFEST.MF", "META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA")
+        exclude("module-info.class", "META-INF/versions/*/module-info.class")
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes(
+            "Main-Class" to application.mainClass.get(),
+            "Implementation-Version" to project.version,
+            "Enable-Native-Access" to "ALL-UNNAMED",
+        )
+    }
 }
 
 // Quality checks, all run by `./gradlew check`. The same block is in signing/build.gradle.kts,

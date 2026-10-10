@@ -18,9 +18,7 @@ import picocli.CommandLine.Spec;
  * keys.json before writing anything. CI runs this for every release.
  */
 @Command(name = "release", description = "Signs a release jar's manifest and checks it against keys.json.")
-final class ReleaseCommand implements Callable<Integer> {
-
-    static final String SIGNING_KEY = "PHOENIXNOTES_SIGNING_KEY";
+final class ReleaseCommand implements Callable<Void> {
 
     private final Map<String, String> env;
 
@@ -53,30 +51,21 @@ final class ReleaseCommand implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() throws IOException {
-        var encodedKey = env.getOrDefault(SIGNING_KEY, "");
+    public Void call() throws IOException, UntrustedException {
+        var encodedKey = env.getOrDefault(CiSecrets.SIGNING_KEY, "");
         if (encodedKey.isBlank()) {
-            return fail(SIGNING_KEY + " is not set");
+            throw new IllegalStateException(CiSecrets.SIGNING_KEY + " is not set");
         }
-        try {
-            var manifest = Release.of(jar, version, url).toJson();
-            var signature = Keys.sign(Keys.decodePrivate(encodedKey), manifest);
-            // Refuse to publish a release apps won't trust, e.g. after a rotation that isn't pushed yet.
-            var trusted = KeyChain.read(Files.readAllBytes(keysFile)).currentKey();
-            Release.verify(manifest, signature, List.of(trusted));
+        var manifest = Release.of(jar, version, url).toJson();
+        var signature = Keys.sign(Keys.decodePrivate(encodedKey), manifest);
+        // Refuse to publish a release apps won't trust, e.g. after a rotation that isn't pushed yet.
+        var trusted = KeyChain.read(Files.readAllBytes(keysFile)).currentKey();
+        Release.verify(manifest, signature, List.of(trusted));
 
-            Files.createDirectories(outDir);
-            Files.write(outDir.resolve("manifest.json"), manifest);
-            Files.writeString(outDir.resolve("manifest.json.sig"), signature);
-            spec.commandLine().getOut().println("Signed release " + version);
-            return 0;
-        } catch (UntrustedException | IllegalArgumentException e) {
-            return fail(e.getMessage());
-        }
-    }
-
-    private int fail(String message) {
-        spec.commandLine().getErr().println("Error: " + message);
-        return 1;
+        Files.createDirectories(outDir);
+        Files.write(outDir.resolve("manifest.json"), manifest);
+        Files.writeString(outDir.resolve("manifest.json.sig"), signature);
+        spec.commandLine().getOut().println("Signed release " + version);
+        return null;
     }
 }
