@@ -11,3 +11,5 @@ Why things are the way they are. New records start from [template.md](template.m
 | 0005 | [The UI is Swing with FlatLaf](0005-swing-and-flatlaf.md) | Accepted |
 | 0006 | [Prefer libraries to hand-written code](0006-libraries-over-code.md) | Accepted |
 | 0007 | [Public GitHub repository for code and releases](0007-public-repository.md) | Accepted |
+| 0008 | [Releases are described by a signed manifest](0008-signed-releases.md) | Accepted |
+| 0009 | [Signing keys rotate by pre-rotation, with a break-glass key](0009-key-rotation.md) | Accepted |
