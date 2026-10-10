@@ -32,6 +32,11 @@ application {
     applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
+// The trusted key chain is built into the app (see docs/decisions/0009-key-rotation.md).
+tasks.processResources {
+    from(rootProject.file("trust/keys.json"))
+}
+
 // A release is one self-contained jar: updates download exactly one file and run it with `java -jar`.
 tasks.jar {
     // Build the dependency jars (including :signing) first, then copy their contents in.
