@@ -77,7 +77,7 @@ final class KeysCommand {
 
     @Command(name = "rotate", description = "Routine rotation: next becomes current (in CI), and a new next is made.")
     void rotate() throws IOException, UntrustedException {
-        // 1. Start from the committed, pushed keys.json.
+        // 1. Start from the committed keys.json.
         var chain = readCommittedKeys();
 
         // 2. Sign the next generation with the old next key. Fails if it isn't the key keys.json trusts.
@@ -96,7 +96,7 @@ final class KeysCommand {
 
     @Command(name = "break-glass", description = "Emergency: replaces every key and distrusts older versions.")
     void breakGlass() throws IOException, UntrustedException {
-        // 1. Start from the committed, pushed keys.json, and make sure this is really wanted.
+        // 1. Start from the committed keys.json, and make sure this is really wanted.
         var chain = readCommittedKeys();
         say("Break glass replaces all three keys and distrusts every installed version signed before.");
         say("Type 'break glass' to continue:");
@@ -123,8 +123,9 @@ final class KeysCommand {
     }
 
     /**
-     * Reads keys.json, refusing unless it's committed and matches origin/main, so a rotation never
-     * starts from a stale or half-finished copy.
+     * Reads keys.json, refusing if it has uncommitted changes (e.g. from a run that failed partway). A
+     * stale copy needs no check of its own: it names an older next key than the one in 1Password, so
+     * signing the new generation fails before anything changes.
      */
     private KeyChain readCommittedKeys() throws IOException, UntrustedException {
         if (!Files.exists(keysFile)) {
@@ -133,11 +134,6 @@ final class KeysCommand {
         if (!shell.run(List.of("git", "status", "--porcelain", "--", keysFile.toString()), "")
                 .isBlank()) {
             throw refused(keysFile + " isn't committed. If an earlier run failed partway, see the README.");
-        }
-        shell.run(List.of("git", "fetch", "--quiet", "origin", "main"), "");
-        if (!shell.run(List.of("git", "diff", "--name-only", "origin/main", "--", keysFile.toString()), "")
-                .isBlank()) {
-            throw refused(keysFile + " differs from origin/main. Pull or push first.");
         }
         return KeyChain.read(Files.readAllBytes(keysFile));
     }
