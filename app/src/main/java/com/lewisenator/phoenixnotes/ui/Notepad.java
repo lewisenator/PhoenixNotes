@@ -1,7 +1,6 @@
 package com.lewisenator.phoenixnotes.ui;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLightLaf;
 import com.lewisenator.phoenixnotes.DataFolder;
 import java.awt.BorderLayout;
 import java.awt.Desktop;

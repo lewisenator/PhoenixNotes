@@ -148,3 +148,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "v$VERSION" app/build/installer/*
 
+  # Keeps the latest two releases; older ones are deleted (their tags stay, as history). Apps only
+  # read the latest release, and never install an older version, so nothing depends on the rest.
+  prune:
+    name: Prune old releases
+    needs: installers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete all but the latest two releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          gh release list --limit 1000 --exclude-drafts --json tagName --jq '.[2:][].tagName'
+          | xargs -r -n 1 gh release delete --yes
