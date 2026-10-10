@@ -1,4 +1,4 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
 import com.lewisenator.phoenixnotes.signing.KeyChain;
 import com.lewisenator.phoenixnotes.signing.Keys;

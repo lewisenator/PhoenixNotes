@@ -1,5 +1,8 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
+import com.lewisenator.phoenixnotes.AppLock;
+import com.lewisenator.phoenixnotes.DataFolder;
+import com.lewisenator.phoenixnotes.ui.Notepad;
 import java.awt.Rectangle;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * without a separate launcher (see docs/decisions/0004-one-self-updating-program.md).
  *
  * <p>Old starts new as a child process, and they talk over new's stdin and stdout. This class is
- * old's side; new's side is the handoff mode of {@link Startup} ({@code --handoff}).
+ * old's side; new's side is the handoff mode of {@code Startup} ({@code --handoff}).
  *
  * <p>A successful handoff, step by step:
  *
@@ -40,21 +43,21 @@ import java.util.concurrent.TimeUnit;
  * </pre>
  *
  * <p>Old is either a running app that found an update ({@link Update#handOff}, which also makes new
- * current before exiting), or an older install starting up ({@link Startup#handOffToCurrentVersion},
+ * current before exiting), or an older install starting up ({@code Startup.handOffToCurrentVersion},
  * which has no window yet).
  *
  * <p>If new doesn't say "ready" within 30 seconds or "running" within 15, or exits first, old stops
  * it, takes the lock back, marks that version as failed, and carries on as the app. An update's
  * version never became current, so the next start still runs old.
  */
-final class Handoff {
+public final class Handoff {
 
-    static final String READY = "ready";
-    static final String GO = "go";
-    static final String RUNNING = "running";
+    public static final String READY = "ready";
+    public static final String GO = "go";
+    public static final String RUNNING = "running";
 
     /** How long either side waits for the other to let go of the data folder. */
-    static final Duration LOCK_WAIT = Duration.ofSeconds(5);
+    public static final Duration LOCK_WAIT = Duration.ofSeconds(5);
 
     private static final Duration READY_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration RUNNING_TIMEOUT = Duration.ofSeconds(15);
@@ -110,7 +113,7 @@ final class Handoff {
      * Saves the notepad first, if one is open, so the new version opens with what was typed, where the
      * window was. If new doesn't take over, stops it, takes the data folder back, and throws.
      */
-    static void handOver(Path jar, DataFolder folder, AppLock lock, Optional<Notepad> notepad)
+    public static void handOver(Path jar, DataFolder folder, AppLock lock, Optional<Notepad> notepad)
             throws IOException, InterruptedException {
         var handoff = start(jar, folder);
         try {

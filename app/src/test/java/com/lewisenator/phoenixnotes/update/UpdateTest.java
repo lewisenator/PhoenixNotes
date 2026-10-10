@@ -1,12 +1,17 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
+import com.lewisenator.phoenixnotes.AppLock;
+import com.lewisenator.phoenixnotes.DataFolder;
+import com.lewisenator.phoenixnotes.Startup;
 import com.lewisenator.phoenixnotes.signing.KeyChain;
 import com.lewisenator.phoenixnotes.signing.Keys;
 import com.lewisenator.phoenixnotes.signing.UntrustedException;
+import com.lewisenator.phoenixnotes.ui.Note;
+import com.lewisenator.phoenixnotes.ui.Notepad;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,8 +92,12 @@ class UpdateTest {
         assertThat(exited).as("exited").isFalse();
         assertThat(installation.currentVersion()).isEmpty();
         assertThat(installation.hasFailed("1.0.6")).isTrue();
-        SwingUtilities.invokeAndWait(() ->
-                assertThat(notepad.overlay().message().getText()).isEqualTo("Update to 1.0.6 failed — still on 1.0.5"));
+        SwingUtilities.invokeAndWait(() -> {
+            assertThat(notepad.frame().getGlassPane().isVisible())
+                    .as("shows the failure")
+                    .isTrue();
+            assertThat(notepad.text().isEditable()).as("typing works again").isTrue();
+        });
         assertThat(new AppLock(folder.lock()).take(Duration.ZERO))
                 .as("still holds the data folder")
                 .isFalse();

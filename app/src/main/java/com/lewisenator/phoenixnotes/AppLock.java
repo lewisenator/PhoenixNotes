@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Makes sure only one copy of the app uses a data folder: an OS file lock, held while the app runs.
  * The OS releases it if the app dies, so a crash never leaves it stuck.
  */
-final class AppLock {
+public final class AppLock {
 
     /**
      * Every held lock's channel. Garbage collection closes unreachable channels, which releases their
@@ -28,7 +28,7 @@ final class AppLock {
     /** Open, and so locked, while held. */
     private Optional<FileChannel> channel = Optional.empty();
 
-    AppLock(Path file) {
+    public AppLock(Path file) {
         this.file = file;
     }
 
@@ -36,7 +36,7 @@ final class AppLock {
      * Takes the lock, waiting up to {@code wait} for whoever holds it to let go. Returns false if they
      * didn't. Taking a lock we already hold does nothing.
      */
-    boolean take(Duration wait) throws IOException, InterruptedException {
+    public boolean take(Duration wait) throws IOException, InterruptedException {
         if (channel.isPresent()) {
             return true;
         }
@@ -55,7 +55,7 @@ final class AppLock {
     }
 
     /** Lets go, so a new version can take over. */
-    void release() throws IOException {
+    public void release() throws IOException {
         if (channel.isPresent()) {
             HELD.remove(channel.get());
             channel.get().close();

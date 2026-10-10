@@ -1,4 +1,4 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.ui;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

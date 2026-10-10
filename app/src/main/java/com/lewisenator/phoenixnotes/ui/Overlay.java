@@ -1,4 +1,4 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

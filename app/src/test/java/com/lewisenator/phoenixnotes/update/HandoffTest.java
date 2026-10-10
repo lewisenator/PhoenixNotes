@@ -1,9 +1,10 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIOException;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
+import com.lewisenator.phoenixnotes.DataFolder;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.nio.channels.FileChannel;

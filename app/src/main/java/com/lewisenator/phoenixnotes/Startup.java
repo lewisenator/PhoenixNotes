@@ -1,6 +1,12 @@
 package com.lewisenator.phoenixnotes;
 
 import com.lewisenator.phoenixnotes.signing.UntrustedException;
+import com.lewisenator.phoenixnotes.ui.Note;
+import com.lewisenator.phoenixnotes.ui.Notepad;
+import com.lewisenator.phoenixnotes.update.Download;
+import com.lewisenator.phoenixnotes.update.Handoff;
+import com.lewisenator.phoenixnotes.update.Installation;
+import com.lewisenator.phoenixnotes.update.UpdateChecks;
 import java.awt.Rectangle;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,10 +19,10 @@ import java.util.Scanner;
  * What happens when the app starts, step by step. Each step logs one line, and a step that doesn't
  * apply skips itself, so the chain in {@link Main} always reads top to bottom.
  */
-final class Startup {
+public final class Startup {
 
     /** The version of a build run from source, which doesn't update itself. */
-    static final String DEV = "dev";
+    public static final String DEV = "dev";
 
     private final Installation installation;
     private final DataFolder dataFolder;
@@ -26,6 +32,7 @@ final class Startup {
     private boolean alreadyRunning;
     private boolean handedOff;
     private Optional<Rectangle> window = Optional.empty();
+    private Optional<Notepad> notepad = Optional.empty();
 
     private Startup(Installation installation, boolean handingOver, String version) {
         this.installation = installation;
@@ -105,17 +112,31 @@ final class Startup {
     }
 
     /** Opens the notepad, unless another copy of the app is running, or another version took over. */
-    Optional<Notepad> openNotepad() throws IOException {
+    Startup openNotepad() throws IOException {
         if (alreadyRunning || handedOff) {
-            return Optional.empty();
+            return this;
         }
-        var notepad = Notepad.open(new Note(dataFolder.note()), version, window);
+        var opened = Notepad.open(new Note(dataFolder.note()), version, window);
+        notepad = Optional.of(opened);
         Log.step("open notepad", "ok");
         if (handingOver) {
-            notepad.showBriefly("Updated to " + version);
+            opened.showBriefly("Updated to " + version);
             System.out.println(Handoff.RUNNING);
         }
-        return Optional.of(notepad);
+        return this;
+    }
+
+    /** Checks for updates now and every so often, once the notepad is open (see {@link UpdateChecks}). */
+    Startup checkForUpdates() {
+        notepad.ifPresent(opened -> new UpdateChecks(
+                        installation,
+                        new Download(Download.LATEST_RELEASE),
+                        version,
+                        opened,
+                        lock,
+                        () -> System.exit(0))
+                .start());
+        return this;
     }
 
     boolean alreadyRunning() {
@@ -124,6 +145,10 @@ final class Startup {
 
     boolean handedOff() {
         return handedOff;
+    }
+
+    Optional<Notepad> notepad() {
+        return notepad;
     }
 
     /** @param handingOver whether an older version started this one to take over from it */

@@ -1,8 +1,9 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import com.lewisenator.phoenixnotes.DataFolder;
 import com.lewisenator.phoenixnotes.signing.KeyChain;
 import com.lewisenator.phoenixnotes.signing.Keys;
 import com.lewisenator.phoenixnotes.signing.Release;

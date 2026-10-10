@@ -1,4 +1,4 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.BorderLayout;
@@ -10,8 +10,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -19,7 +21,7 @@ import javax.swing.Timer;
 import javax.swing.WindowConstants;
 
 /** The notepad window. Kept thin: reading and writing the note is {@link Note}'s job. */
-final class Notepad {
+public final class Notepad {
 
     /** Saves this long after the last keystroke, so typing doesn't write the file on every key. */
     private static final int SAVE_DELAY_MILLIS = 1000;
@@ -32,6 +34,7 @@ final class Notepad {
     private final JFrame frame = new JFrame();
     private final JTextArea text = new JTextArea();
     private final JLabel status = new JLabel();
+    private final JButton checkForUpdates = new JButton("Check for updates");
     private final Timer autosave = new Timer(SAVE_DELAY_MILLIS, event -> save());
     private final Overlay overlay = new Overlay();
     private final Timer hideOverlay = new Timer(MESSAGE_MILLIS, event -> overlay.setVisible(false));
@@ -53,7 +56,11 @@ final class Notepad {
         frame.setGlassPane(overlay);
         frame.setTitle("Phoenix Notes " + version);
         frame.add(new JScrollPane(text), BorderLayout.CENTER);
-        frame.add(status, BorderLayout.SOUTH);
+        var statusLine = new JPanel(new BorderLayout());
+        statusLine.add(status, BorderLayout.CENTER);
+        statusLine.add(checkForUpdates, BorderLayout.EAST);
+        checkForUpdates.putClientProperty("JButton.buttonType", "borderless");
+        frame.add(statusLine, BorderLayout.SOUTH);
         // After a handoff, open exactly where the old version's window was.
         window.ifPresentOrElse(frame::setBounds, () -> {
             frame.setSize(640, 480);
@@ -83,16 +90,32 @@ final class Notepad {
      * Saves the note for the version taking over, and returns where the window is so it can open in
      * the same place. Unlike {@link #save()}, fails if the note can't be saved, so nothing typed is lost.
      */
-    Rectangle saveForHandoff() throws IOException {
+    public Rectangle saveForHandoff() throws IOException {
         note.write(onEventThread(text::getText));
         return onEventThread(frame::getBounds);
+    }
+
+    /** What to do when "Check for updates" is clicked. */
+    public void onCheckForUpdates(Runnable check) {
+        SwingUtilities.invokeLater(() -> checkForUpdates.addActionListener(event -> check.run()));
+    }
+
+    /**
+     * Shows how a check for updates is going on its button: "Checking…" while it runs, which can't be
+     * clicked again, then the result, which can.
+     */
+    public void showCheck(String result, boolean done) {
+        SwingUtilities.invokeLater(() -> {
+            checkForUpdates.setText(result);
+            checkForUpdates.setEnabled(done);
+        });
     }
 
     /**
      * Shows "Updating to X…" over the window and stops typing, so nothing is typed after the note is
      * saved for the new version. Stays up until this version exits, or {@link #showBriefly} replaces it.
      */
-    void showUpdating(String newVersion) {
+    public void showUpdating(String newVersion) {
         SwingUtilities.invokeLater(() -> {
             hideOverlay.stop();
             text.setEditable(false);
@@ -101,7 +124,7 @@ final class Notepad {
     }
 
     /** Shows a message over the window for a few seconds, like "Updated to 1.0.13". */
-    void showBriefly(String message) {
+    public void showBriefly(String message) {
         SwingUtilities.invokeLater(() -> {
             text.setEditable(true);
             overlay.show(message, false);
@@ -109,16 +132,20 @@ final class Notepad {
         });
     }
 
-    JFrame frame() {
+    public JFrame frame() {
         return frame;
     }
 
-    JTextArea text() {
+    public JTextArea text() {
         return text;
     }
 
     JLabel status() {
         return status;
+    }
+
+    public JButton checkForUpdates() {
+        return checkForUpdates;
     }
 
     Overlay overlay() {
@@ -133,7 +160,7 @@ final class Notepad {
      * Builds and shows the window on Swing's event thread. Opens at
      * {@code window} if given (after a handoff), otherwise wherever the OS puts new windows.
      */
-    static Notepad open(Note note, String version, Optional<Rectangle> window) throws IOException {
+    public static Notepad open(Note note, String version, Optional<Rectangle> window) throws IOException {
         FlatLightLaf.setup();
         var savedText = note.read();
         return onEventThread(() -> {

@@ -19,25 +19,25 @@ import java.nio.file.StandardCopyOption;
  * versions/1.0.16/failed         there if that version failed to take over
  * </pre>
  */
-record DataFolder(Path path) {
+public record DataFolder(Path path) {
 
-    Path note() {
+    public Path note() {
         return path.resolve("note.txt");
     }
 
-    Path lock() {
+    public Path lock() {
         return path.resolve("app.lock");
     }
 
-    Path keys() {
+    public Path keys() {
         return path.resolve("keys.json");
     }
 
-    Path current() {
+    public Path current() {
         return path.resolve("current");
     }
 
-    Path version(String version) {
+    public Path version(String version) {
         return path.resolve("versions").resolve(version);
     }
 
@@ -45,7 +45,7 @@ record DataFolder(Path path) {
      * Writes a file next to the old one, then swaps it in with an atomic rename, so a crash leaves
      * either the old contents or the new ones, never half of either.
      */
-    static void write(Path file, byte[] contents) throws IOException {
+    public static void write(Path file, byte[] contents) throws IOException {
         var folder = file.toAbsolutePath().getParent();
         Files.createDirectories(folder);
         var temp = Files.createTempFile(folder, file.getFileName() + "-", ".tmp");

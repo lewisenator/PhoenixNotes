@@ -32,7 +32,8 @@ public final class Main implements Callable<Integer> {
                 .awaitGo()
                 .lockDataFolder()
                 .handOffToCurrentVersion()
-                .openNotepad();
+                .openNotepad()
+                .checkForUpdates();
         return 0;
     }
 

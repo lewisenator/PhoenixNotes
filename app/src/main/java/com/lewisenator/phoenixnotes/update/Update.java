@@ -1,7 +1,11 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
+import com.lewisenator.phoenixnotes.AppLock;
+import com.lewisenator.phoenixnotes.Log;
+import com.lewisenator.phoenixnotes.Startup;
 import com.lewisenator.phoenixnotes.signing.Release;
 import com.lewisenator.phoenixnotes.signing.UntrustedException;
+import com.lewisenator.phoenixnotes.ui.Notepad;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -31,6 +35,8 @@ final class Update {
 
     /** The release to update to, until a step finds there's nothing to do. */
     private Optional<Release> release = Optional.empty();
+
+    private String outcome = "";
 
     private Update(Installation installation, Download download, String runningVersion) {
         this.installation = installation;
@@ -101,6 +107,7 @@ final class Update {
             Handoff.handOver(installation.jar(version), installation.folder(), lock, Optional.of(notepad));
         } catch (IOException e) {
             notepad.showBriefly("Update to " + version + " failed — still on " + runningVersion);
+            outcome = "update to " + version + " failed";
             installation.markFailed(version);
             Log.step("hand off", "failed, keeping " + runningVersion + ": " + e.getMessage());
             return this;
@@ -111,8 +118,14 @@ final class Update {
         return this;
     }
 
+    /** Why this check didn't update, for the "Check for updates" button: "up to date", say. */
+    String outcome() {
+        return outcome;
+    }
+
     private Update skip(String why) {
         release = Optional.empty();
+        outcome = why;
         Log.step("skip unless newer", why);
         return this;
     }

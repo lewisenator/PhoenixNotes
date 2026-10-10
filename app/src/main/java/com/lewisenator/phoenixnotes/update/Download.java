@@ -1,4 +1,4 @@
-package com.lewisenator.phoenixnotes;
+package com.lewisenator.phoenixnotes.update;
 
 import java.io.IOException;
 import java.net.URI;
@@ -12,9 +12,9 @@ import java.time.Duration;
  * Fetches files from the latest release. It only brings bytes; {@link Installation} decides whether
  * to trust them, so the host never has to be trusted (see docs/decisions/0007-public-repository.md).
  */
-final class Download {
+public final class Download {
 
-    static final URI LATEST_RELEASE =
+    public static final URI LATEST_RELEASE =
             URI.create("https://github.com/lewisenator/PhoenixNotes/releases/latest/download/");
 
     private final URI release;
@@ -25,7 +25,7 @@ final class Download {
             .build();
 
     /** @param release where the release's files are, e.g. {@link #LATEST_RELEASE} */
-    Download(URI release) {
+    public Download(URI release) {
         this.release = release;
     }
 

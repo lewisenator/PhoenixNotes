@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import com.lewisenator.phoenixnotes.signing.KeyChain;
 import com.lewisenator.phoenixnotes.signing.Keys;
 import com.lewisenator.phoenixnotes.signing.Release;
+import com.lewisenator.phoenixnotes.update.Installation;
 import java.awt.GraphicsEnvironment;
 import java.net.URI;
 import java.nio.file.Files;
@@ -60,7 +61,7 @@ class StartupTest {
         var second = Startup.in(folder, false).lockDataFolder().handOffToCurrentVersion();
 
         assertThat(second.alreadyRunning()).isTrue();
-        assertThat(second.openNotepad()).isEmpty();
+        assertThat(second.openNotepad().notepad()).isEmpty();
     }
 
     @Test
@@ -71,7 +72,7 @@ class StartupTest {
         var startup = start("1.0.5");
 
         assertThat(startup.handedOff()).isTrue();
-        assertThat(startup.openNotepad()).isEmpty();
+        assertThat(startup.openNotepad().notepad()).isEmpty();
         assertThat(new AppLock(folder.lock()).take(Duration.ZERO))
                 .as("the current version holds the data folder")
                 .isFalse();
