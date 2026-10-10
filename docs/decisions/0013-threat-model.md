@@ -21,6 +21,8 @@ code they like as that user, including editing the installed app itself.
 - Trust comes from signatures, never from the host, the URL or the data folder. Moving releases
   to another host changes nothing about security.
 - A leaked signing key is handled by rotation ([0009](0009-key-rotation.md)): a window, not the fleet.
+- Apps never install an older version, so a compromised host can hold back new releases, but
+  can't make anyone run an old, flawed one.
 - Malware running as the user is the operating system's problem, not this app's.
 - The first install trusts the downloaded installer; signed installers would harden that.
 

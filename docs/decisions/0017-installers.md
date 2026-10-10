@@ -23,7 +23,8 @@ installs wherever the app is dragged. The installers aren't signed or notarized.
 - macOS and Windows warn on first launch, and the README explains the extra click. Trust in
   updates doesn't depend on this: they're checked against the app's own keys.
 - The macOS installer is for Apple silicon only; other computers can run the jar.
-- Each release adds about 100 MB of installers, so old releases should be pruned now and then.
+- Each release adds about 80 MB of installers, so CI keeps only the latest two releases. Nothing
+  needs the older ones: apps only read the latest, and never install an older version.
 
 ## Alternatives considered
 

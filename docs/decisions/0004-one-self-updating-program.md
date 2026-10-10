@@ -16,7 +16,7 @@ new version doesn't report in time, the old one stops it and keeps running.
 
 ## Consequences
 
-- One module and one jar to understand; nothing to install besides the app.
+- One program and one jar to understand; nothing to install besides the app.
 - The update code and trusted keys ship with every release, so key rotations and fixes to the
   updater reach everyone with the next update. With a separate launcher, they live in the part
   that rarely updates, and old launchers fall behind.
