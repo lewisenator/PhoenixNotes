@@ -5,8 +5,7 @@ import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -29,10 +28,10 @@ final class Notepad {
     private final JLabel status = new JLabel();
     private final Timer autosave = new Timer(SAVE_DELAY_MILLIS, event -> save());
 
-    private Notepad(Note note, String version) throws IOException {
+    private Notepad(Note note, String version, String savedText) {
         this.note = note;
         this.version = version;
-        text.setText(note.read());
+        text.setText(savedText);
         text.setLineWrap(true);
         text.setWrapStyleWord(true);
         // Every edit restarts the timer, so it only fires once typing pauses.
@@ -84,24 +83,16 @@ final class Notepad {
     }
 
     /** Builds and shows the window on Swing's event thread, where all UI work must happen. */
-    static Notepad open(Note note, String version) {
+    static Notepad open(Note note, String version) throws IOException {
         FlatLightLaf.setup();
-        var notepad = new AtomicReference<Notepad>();
-        try {
-            SwingUtilities.invokeAndWait(() -> {
-                try {
-                    notepad.set(new Notepad(note, version));
-                } catch (IOException e) {
-                    throw new IllegalStateException("Couldn't read the note", e);
-                }
-                notepad.get().frame.setVisible(true);
-            });
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while opening the window", e);
-        } catch (InvocationTargetException e) {
-            throw new IllegalStateException("Couldn't open the window", e.getCause());
-        }
-        return notepad.get();
+        var savedText = note.read();
+        return CompletableFuture.supplyAsync(
+                        () -> {
+                            var notepad = new Notepad(note, version, savedText);
+                            notepad.frame.setVisible(true);
+                            return notepad;
+                        },
+                        SwingUtilities::invokeLater)
+                .join();
     }
 }

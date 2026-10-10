@@ -12,14 +12,14 @@ class StartupTest {
     Path folder;
 
     @Test
-    void theFirstCopyGetsTheDataFolder() {
+    void theFirstCopyGetsTheDataFolder() throws Exception {
         var startup = Startup.in(new DataFolder(folder)).lockDataFolder();
 
         assertThat(startup.alreadyRunning()).isFalse();
     }
 
     @Test
-    void aSecondCopyDoesNothing() {
+    void aSecondCopyDoesNothing() throws Exception {
         var dataFolder = new DataFolder(folder);
         Startup.in(dataFolder).lockDataFolder();
 

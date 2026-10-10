@@ -1,7 +1,6 @@
 package com.lewisenator.phoenixnotes;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
@@ -26,26 +25,22 @@ final class Startup {
     }
 
     /** Only one copy of the app may use a data folder. A second copy notes that and skips the rest. */
-    Startup lockDataFolder() {
-        try {
-            Files.createDirectories(dataFolder.path());
-            var channel = FileChannel.open(dataFolder.lock(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            if (tryLock(channel)) {
-                lock = channel;
-                log("lock data folder", "ok");
-            } else {
-                channel.close();
-                alreadyRunning = true;
-                log("lock data folder", "Phoenix Notes is already running here; nothing to do");
-            }
-            return this;
-        } catch (IOException e) {
-            throw new UncheckedIOException("Couldn't lock " + dataFolder.lock(), e);
+    Startup lockDataFolder() throws IOException {
+        Files.createDirectories(dataFolder.path());
+        var channel = FileChannel.open(dataFolder.lock(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        if (tryLock(channel)) {
+            lock = channel;
+            log("lock data folder", "ok");
+        } else {
+            channel.close();
+            alreadyRunning = true;
+            log("lock data folder", "Phoenix Notes is already running here; nothing to do");
         }
+        return this;
     }
 
     /** Opens the notepad, unless another copy of the app is already running. */
-    Optional<Notepad> openNotepad() {
+    Optional<Notepad> openNotepad() throws IOException {
         if (alreadyRunning) {
             return Optional.empty();
         }

@@ -1,12 +1,14 @@
 package com.lewisenator.phoenixnotes;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "phoenix-notes", description = "A notepad that keeps itself up to date.")
-public final class Main implements Runnable {
+public final class Main implements Callable<Integer> {
 
     @Option(
             names = "--data-dir",
@@ -20,9 +22,10 @@ public final class Main implements Runnable {
     boolean help;
 
     @Override
-    public void run() {
+    public Integer call() throws IOException {
         var dataFolder = dataDir != null ? new DataFolder(dataDir) : DataFolder.forCurrentUser();
         Startup.in(dataFolder).lockDataFolder().openNotepad();
+        return 0;
     }
 
     public static void main(String[] args) {
