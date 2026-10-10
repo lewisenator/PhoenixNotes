@@ -12,6 +12,9 @@ java {
 }
 
 dependencies {
+    implementation(libs.jackson)
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
     errorprone(libs.errorprone)
 
     testImplementation(platform(libs.junit.bom))
@@ -22,7 +25,8 @@ dependencies {
 
 // Quality checks, all run by `./gradlew check`. The same block is in app/build.gradle.kts.
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+    // All warnings fail the build, except "serial": nothing here is ever serialized.
+    options.compilerArgs.addAll(listOf("-Xlint:all,-serial", "-Werror"))
 }
 spotless {
     java {

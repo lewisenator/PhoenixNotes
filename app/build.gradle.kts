@@ -32,7 +32,8 @@ application {
 // Quality checks, all run by `./gradlew check`. The same block is in signing/build.gradle.kts,
 // except for the coverage minimum: the app includes Swing code that's thin and lightly tested.
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+    // All warnings fail the build, except "serial": nothing here is ever serialized.
+    options.compilerArgs.addAll(listOf("-Xlint:all,-serial", "-Werror"))
 }
 spotless {
     java {
