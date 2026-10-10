@@ -17,3 +17,6 @@ Why things are the way they are. New records start from [template.md](template.m
 | 0011 | [Every merge to main is a release, numbered by commit count](0011-version-numbers.md) | Accepted |
 | 0012 | [Versions are installed side by side and verified before every run](0012-installed-versions.md) | Accepted |
 | 0013 | [What the update mechanism defends against](0013-threat-model.md) | Accepted |
+| 0014 | [The running version hands over to the new one over stdin and stdout](0014-handoff.md) | Accepted |
+| 0015 | [Updates are checked for regularly and applied straight away](0015-automatic-updates.md) | Accepted |
+| 0016 | [Any UTF-8 text file can be opened as the note](0016-open-any-text-file.md) | Accepted |

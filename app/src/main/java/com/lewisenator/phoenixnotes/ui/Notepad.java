@@ -44,6 +44,8 @@ public final class Notepad {
     /** How long a message over the window stays up. */
     private static final int MESSAGE_MILLIS = 4000;
 
+    private static final String WINDOW_TITLE = "Phoenix Notes";
+
     private static final boolean MAC = System.getProperty("os.name").startsWith("Mac");
 
     private final DataFolder folder;
@@ -212,7 +214,7 @@ public final class Notepad {
         });
         undo.discardAllEdits();
         var name = note.file().equals(folder.note()) ? "" : note.file().getFileName() + " — ";
-        frame.setTitle(name + "Phoenix Notes " + version);
+        frame.setTitle(name + WINDOW_TITLE + " " + version);
         showStatus("Saved");
     }
 
