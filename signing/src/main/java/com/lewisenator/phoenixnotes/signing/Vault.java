@@ -15,8 +15,8 @@ interface Vault {
 
     void save(String item, KeyPair keys) throws IOException;
 
-    /** Archives the item, and renames its "(pending)" replacement to take its place. */
-    void replaceWithPending(String item) throws IOException;
+    /** Moves the item to 1Password's archive, where it can still be restored. */
+    void archive(String item) throws IOException;
 
     /** A 1Password vault, through the {@code op} command. Values go in on stdin, never as arguments. */
     static Vault onePassword(Shell shell, String vault) {
@@ -60,11 +60,8 @@ interface Vault {
             }
 
             @Override
-            public void replaceWithPending(String item) throws IOException {
+            public void archive(String item) throws IOException {
                 shell.run(List.of("op", "item", "delete", item, "--vault", vault, "--archive"), "");
-                shell.run(
-                        List.of("op", "item", "edit", item + KeysCommand.PENDING, "--vault", vault, "--title", item),
-                        "");
             }
         };
     }

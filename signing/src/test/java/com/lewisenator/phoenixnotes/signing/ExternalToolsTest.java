@@ -36,20 +36,19 @@ class ExternalToolsTest {
     }
 
     @Test
-    void readsAndReplacesOnePasswordItems() throws Exception {
+    void readsAndArchivesOnePasswordItems() throws Exception {
         output = "the-key\n";
         var vault = Vault.onePassword(recorder, "Private");
 
         assertThat(vault.read("Item")).isEqualTo("the-key");
         assertThat(vault.has("Item")).isTrue();
-        vault.replaceWithPending("Item");
+        vault.archive("Item");
 
         assertThat(commands)
                 .containsExactly(
                         List.of("op", "read", "op://Private/Item/credential"),
                         List.of("op", "item", "get", "Item", "--vault", "Private"),
-                        List.of("op", "item", "delete", "Item", "--vault", "Private", "--archive"),
-                        List.of("op", "item", "edit", "Item (pending)", "--vault", "Private", "--title", "Item"));
+                        List.of("op", "item", "delete", "Item", "--vault", "Private", "--archive"));
     }
 
     @Test

@@ -66,7 +66,6 @@ class KeysCommandTest {
         assertThat(ci.key).hasValue(oldNextPrivate);
         assertThat(vault.publicKey(KeysCommand.NEXT)).isEqualTo(after.next());
         assertThat(vault.archived).containsExactly(KeysCommand.NEXT);
-        assertThat(vault.items).doesNotContainKey(KeysCommand.NEXT + KeysCommand.PENDING);
     }
 
     @Test
@@ -149,9 +148,9 @@ class KeysCommandTest {
         }
 
         @Override
-        public void replaceWithPending(String item) {
+        public void archive(String item) {
             archived.add(item);
-            items.put(item, items.remove(item + KeysCommand.PENDING));
+            items.remove(item);
         }
 
         String publicKey(String item) {

@@ -86,8 +86,6 @@ git commit -am "Replace signing keys" && git push
 After each one, **push `trust/keys.json` straight away**: until it's on `main`, releases fail CI's
 check rather than shipping with a key apps don't trust yet.
 
-**If a command fails partway:** each one checks everything first, then saves new keys in
-1Password as "(pending)" before anything depends on them. If the CI secret wasn't changed yet,
-discard `trust/keys.json` changes (`git checkout -- trust/keys.json`), delete any "(pending)" item,
-and run it again. If it was, finish by hand: archive the old 1Password item, rename the
-"(pending)" one to its name, then commit and push `trust/keys.json`.
+**If a command fails partway:** each one checks everything before changing anything, and replaced
+1Password items are archived, not deleted. Restore anything archived from 1Password's Archive,
+discard the `trust/keys.json` change (`git checkout -- trust/keys.json`), and run it again.

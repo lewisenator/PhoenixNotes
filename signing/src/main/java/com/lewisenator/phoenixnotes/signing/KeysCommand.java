@@ -13,15 +13,14 @@ import picocli.CommandLine.Spec;
 
 /**
  * Sets up, rotates and replaces the signing keys (see docs/decisions/0009-key-rotation.md). Each
- * command checks everything before changing anything, then changes things in an order a failure can
- * be recovered from: new keys are saved before anything depends on them.
+ * command checks everything before changing anything. Replaced 1Password items are archived, not
+ * deleted, so a failure partway can always be undone.
  */
 @Command(name = "keys", description = "Sets up, rotates and replaces the release signing keys.")
 final class KeysCommand {
 
     static final String NEXT = "PhoenixNotes next signing key";
     static final String BREAK_GLASS = "PhoenixNotes break-glass key";
-    static final String PENDING = " (pending)";
 
     private final Vault vault;
     private final CiSecrets ci;
@@ -50,7 +49,7 @@ final class KeysCommand {
         if (Files.exists(keysFile)) {
             throw refused(keysFile + " already exists. To rotate keys, run keysRotate.");
         }
-        for (var item : List.of(NEXT, BREAK_GLASS, NEXT + PENDING, BREAK_GLASS + PENDING)) {
+        for (var item : List.of(NEXT, BREAK_GLASS)) {
             if (vault.has(item)) {
                 throw refused("1Password already has \"" + item + "\". Remove it if you mean to start over.");
             }
@@ -87,10 +86,10 @@ final class KeysCommand {
         var rotated = chain.rotate(oldNext, encode(newNext));
         Files.write(keysFile, rotated.toJson());
 
-        // 3. Save the new next key before anything depends on it; then move the promoted key to CI.
-        vault.save(NEXT + PENDING, newNext);
+        // 3. Archive the old next key, save the new one, and move the promoted key to CI.
+        vault.archive(NEXT);
+        vault.save(NEXT, newNext);
         ci.setSigningKey(oldNext);
-        vault.replaceWithPending(NEXT);
         say("Rotated to generation " + rotated.latest().number() + ". Commit and push " + keysFile
                 + " now: releases fail until it's on main.");
     }
@@ -113,19 +112,19 @@ final class KeysCommand {
         var replaced = chain.breakGlass(oldBreakGlass, encode(current), encode(next), encode(breakGlass));
         Files.write(keysFile, replaced.toJson());
 
-        // 3. Save the new offline keys before anything depends on them; then switch CI and 1Password.
-        vault.save(NEXT + PENDING, next);
-        vault.save(BREAK_GLASS + PENDING, breakGlass);
+        // 3. Archive the old offline keys, save the new ones, and switch CI.
+        vault.archive(NEXT);
+        vault.archive(BREAK_GLASS);
+        vault.save(NEXT, next);
+        vault.save(BREAK_GLASS, breakGlass);
         ci.setSigningKey(current.getPrivate());
-        vault.replaceWithPending(NEXT);
-        vault.replaceWithPending(BREAK_GLASS);
         say("Replaced every key at generation " + replaced.latest().number() + ". Commit and push " + keysFile
                 + " now: releases fail until it's on main.");
     }
 
     /**
      * Reads keys.json, refusing unless it's committed and matches origin/main, so a rotation never
-     * starts from a stale or half-finished copy. Also refuses if an earlier run left pending items.
+     * starts from a stale or half-finished copy.
      */
     private KeyChain readCommittedKeys() throws IOException, UntrustedException {
         if (!Files.exists(keysFile)) {
@@ -139,11 +138,6 @@ final class KeysCommand {
         if (!shell.run(List.of("git", "diff", "--name-only", "origin/main", "--", keysFile.toString()), "")
                 .isBlank()) {
             throw refused(keysFile + " differs from origin/main. Pull or push first.");
-        }
-        for (var item : List.of(NEXT + PENDING, BREAK_GLASS + PENDING)) {
-            if (vault.has(item)) {
-                throw refused("1Password has \"" + item + "\" from a run that didn't finish. See the README.");
-            }
         }
         return KeyChain.read(Files.readAllBytes(keysFile));
     }
