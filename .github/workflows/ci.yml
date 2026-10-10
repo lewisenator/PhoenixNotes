@@ -36,3 +36,21 @@ jobs:
       - name: Check
         if: runner.os != 'Linux'
         run: ./gradlew check
+
+  lint:
+    name: Lint workflows, scan for secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gitleaks scans every commit, not just the latest.
+          fetch-depth: 0
+      - name: actionlint
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Commenting on pull requests would need write access; the job log is enough.
+          GITLEAKS_ENABLE_COMMENTS: false
