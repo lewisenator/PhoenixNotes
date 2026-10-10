@@ -13,15 +13,18 @@ Java 25 (current LTS) and Gradle, with:
 
 - the wrapper's checksum pinned, so a tampered Gradle download is rejected;
 - a toolchain, so Gradle downloads Java 25 if it isn't installed;
-- one convention plugin (`buildSrc`) for settings every module shares;
+- each module's build file self-contained, repeating the few lines both modules share;
 - dependency versions in one catalog (`gradle/libs.versions.toml`).
 
 ## Consequences
 
 - The JDK covers signatures, HTTP, processes and Swing; libraries fill the rest.
-- Each module's build file only says what's specific to it.
+- Each build file can be read on its own. Shared settings (Java version, tests, quality checks)
+  appear in both, so a change to them is made twice.
 
 ## Alternatives considered
 
-- **Maven:** would work; Gradle's convention plugins keep shared setup in one place.
+- **Maven:** would work just as well.
+- **A convention plugin in `buildSrc`:** shared settings in one place, but a special folder and
+  plugin to explain, for two modules' worth of duplication.
 - **Electron or another stack:** its built-in updater would replace what this project builds.
