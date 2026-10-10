@@ -51,6 +51,10 @@ final class Installation {
         return updated;
     }
 
+    DataFolder folder() {
+        return folder;
+    }
+
     /** The version to run, if one is installed. */
     Optional<String> currentVersion() throws IOException {
         return Files.exists(folder.current())
@@ -68,13 +72,18 @@ final class Installation {
         return Files.createTempFile(folder.path(), "download-", ".jar");
     }
 
+    /** Reads a downloaded release manifest, but only if it's signed by the current key. */
+    Release checkRelease(byte[] manifest, String signature) throws IOException, UntrustedException {
+        return Release.verify(manifest, signature, List.of(trustedKeys().currentKey()));
+    }
+
     /**
      * Installs a downloaded release, but only if its manifest is signed by the current key and the jar
      * matches it. It doesn't become current until {@link #makeCurrent} (after a successful handoff).
      * Returns the installed version.
      */
     String install(byte[] manifest, String signature, Path downloadedJar) throws IOException, UntrustedException {
-        var release = Release.verify(manifest, signature, List.of(trustedKeys().currentKey()));
+        var release = checkRelease(manifest, signature);
         release.checkJar(downloadedJar);
         var versionFolder = folder.version(release.version());
         Files.createDirectories(versionFolder);
@@ -87,6 +96,15 @@ final class Installation {
     /** Makes a version the one to run, with an atomic rename. */
     void makeCurrent(String version) throws IOException {
         DataFolder.write(folder.current(), version.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** Remembers that a version failed to take over, so updates don't keep retrying it. */
+    void markFailed(String version) throws IOException {
+        Files.writeString(folder.version(version).resolve("failed"), "");
+    }
+
+    boolean hasFailed(String version) {
+        return Files.exists(folder.version(version).resolve("failed"));
     }
 
     /**

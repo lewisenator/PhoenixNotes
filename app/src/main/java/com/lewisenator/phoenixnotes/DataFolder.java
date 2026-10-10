@@ -16,6 +16,7 @@ import java.nio.file.StandardCopyOption;
  * versions/1.0.16/app.jar        each version's jar, with its signed manifest:
  * versions/1.0.16/manifest.json
  * versions/1.0.16/manifest.json.sig
+ * versions/1.0.16/failed         there if that version failed to take over
  * </pre>
  */
 record DataFolder(Path path) {

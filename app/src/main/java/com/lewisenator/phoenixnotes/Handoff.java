@@ -50,6 +50,9 @@ final class Handoff {
     static final String GO = "go";
     static final String RUNNING = "running";
 
+    /** How long either side waits for the other to let go of the data folder. */
+    static final Duration LOCK_WAIT = Duration.ofSeconds(5);
+
     private static final Duration READY_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration RUNNING_TIMEOUT = Duration.ofSeconds(15);
 

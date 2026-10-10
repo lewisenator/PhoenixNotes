@@ -8,6 +8,7 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -71,6 +72,15 @@ final class Notepad {
         }
     }
 
+    /**
+     * Saves the note for the version taking over, and returns where the window is so it can open in
+     * the same place. Unlike {@link #save()}, fails if the note can't be saved, so nothing typed is lost.
+     */
+    Rectangle saveForHandoff() throws IOException {
+        note.write(onEventThread(text::getText));
+        return onEventThread(frame::getBounds);
+    }
+
     JFrame frame() {
         return frame;
     }
@@ -88,19 +98,21 @@ final class Notepad {
     }
 
     /**
-     * Builds and shows the window on Swing's event thread, where all UI work must happen. Opens at
+     * Builds and shows the window on Swing's event thread. Opens at
      * {@code window} if given (after a handoff), otherwise wherever the OS puts new windows.
      */
     static Notepad open(Note note, String version, Optional<Rectangle> window) throws IOException {
         FlatLightLaf.setup();
         var savedText = note.read();
-        return CompletableFuture.supplyAsync(
-                        () -> {
-                            var notepad = new Notepad(note, version, savedText, window);
-                            notepad.frame.setVisible(true);
-                            return notepad;
-                        },
-                        SwingUtilities::invokeLater)
-                .join();
+        return onEventThread(() -> {
+            var notepad = new Notepad(note, version, savedText, window);
+            notepad.frame.setVisible(true);
+            return notepad;
+        });
+    }
+
+    /** Runs {@code work} on Swing's event thread, where all UI work must happen, and waits for it. */
+    private static <T> T onEventThread(Supplier<T> work) {
+        return CompletableFuture.supplyAsync(work, SwingUtilities::invokeLater).join();
     }
 }
