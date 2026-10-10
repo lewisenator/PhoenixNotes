@@ -34,6 +34,8 @@ application {
 
 // A release is one self-contained jar: updates download exactly one file and run it with `java -jar`.
 tasks.jar {
+    // Build the dependency jars (including :signing) first, then copy their contents in.
+    dependsOn(configurations.runtimeClasspath)
     from({ configurations.runtimeClasspath.get().map { zipTree(it) } }) {
         exclude("META-INF/MANIFEST.MF", "META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA")
         exclude("module-info.class", "META-INF/versions/*/module-info.class")

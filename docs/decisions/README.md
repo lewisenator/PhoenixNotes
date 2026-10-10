@@ -14,3 +14,4 @@ Why things are the way they are. New records start from [template.md](template.m
 | 0008 | [Releases are described by a signed manifest](0008-signed-releases.md) | Accepted |
 | 0009 | [Signing keys rotate by pre-rotation, with a break-glass key](0009-key-rotation.md) | Accepted |
 | 0010 | [Key commands are written in Java, not shell scripts](0010-key-commands-in-java.md) | Accepted |
+| 0011 | [Every merge to main is a release, numbered by commit count](0011-version-numbers.md) | Accepted |
