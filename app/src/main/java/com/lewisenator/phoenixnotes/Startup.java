@@ -44,7 +44,7 @@ final class Startup {
         if (alreadyRunning) {
             return Optional.empty();
         }
-        var notepad = Notepad.open(new Note(dataFolder.note()), AppVersion.current());
+        var notepad = Notepad.open(new Note(dataFolder.note()), version());
         log("open notepad", "ok");
         return Optional.of(notepad);
     }
@@ -54,8 +54,14 @@ final class Startup {
     }
 
     static Startup in(DataFolder dataFolder) {
-        log("start", "Phoenix Notes " + AppVersion.current() + ", data in " + dataFolder.path());
+        log("start", "Phoenix Notes " + version() + ", data in " + dataFolder.path());
         return new Startup(dataFolder);
+    }
+
+    /** This app's version, from its jar's manifest, or "dev" when running from source. */
+    static String version() {
+        var version = Startup.class.getPackage().getImplementationVersion();
+        return version != null ? version : "dev";
     }
 
     /** True if we got the lock; false if another process (or this one) already holds it. */
