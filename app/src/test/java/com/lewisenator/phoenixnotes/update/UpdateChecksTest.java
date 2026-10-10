@@ -7,7 +7,6 @@ import com.lewisenator.phoenixnotes.AppLock;
 import com.lewisenator.phoenixnotes.DataFolder;
 import com.lewisenator.phoenixnotes.signing.KeyChain;
 import com.lewisenator.phoenixnotes.signing.Keys;
-import com.lewisenator.phoenixnotes.ui.Note;
 import com.lewisenator.phoenixnotes.ui.Notepad;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
@@ -49,7 +48,7 @@ class UpdateChecksTest {
                 Keys.encode(breakGlass.getPublic()));
         server = new ReleaseServer(served);
         var folder = new DataFolder(dataDir);
-        notepad = Notepad.open(new Note(folder.note()), "1.0.6", Optional.empty());
+        notepad = Notepad.open(folder, "1.0.6", Optional.empty());
         checks = new UpdateChecks(
                 new Installation(folder, keys),
                 new Download(server.latest()),
@@ -104,7 +103,7 @@ class UpdateChecksTest {
     /** The button's text, once the event thread has caught up. */
     private String button() throws Exception {
         var text = new AtomicReference<String>();
-        SwingUtilities.invokeAndWait(() -> text.set(notepad.checkForUpdates().getText()));
+        SwingUtilities.invokeAndWait(() -> text.set(notepad.updateStatus().getText()));
         return text.get();
     }
 }

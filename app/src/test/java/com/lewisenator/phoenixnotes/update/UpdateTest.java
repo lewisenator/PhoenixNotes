@@ -161,7 +161,7 @@ class UpdateTest {
 
     private void openNotepad(String typed) throws Exception {
         assumeFalse(GraphicsEnvironment.isHeadless(), "needs a display");
-        notepad = Notepad.open(new Note(folder.note()), "1.0.5", Optional.empty());
+        notepad = Notepad.open(folder, "1.0.5", Optional.empty());
         SwingUtilities.invokeAndWait(() -> notepad.text().setText(typed));
     }
 

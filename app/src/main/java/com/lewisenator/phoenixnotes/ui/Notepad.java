@@ -1,26 +1,41 @@
 package com.lewisenator.phoenixnotes.ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import com.lewisenator.phoenixnotes.DataFolder;
 import java.awt.BorderLayout;
+import java.awt.Desktop;
+import java.awt.FileDialog;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.desktop.QuitStrategy;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.WindowConstants;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.PlainDocument;
+import javax.swing.undo.UndoManager;
 
-/** The notepad window. Kept thin: reading and writing the note is {@link Note}'s job. */
+/** The notepad window. Kept thin: reading and writing files is {@link Note}'s job. */
 public final class Notepad {
 
     /** Saves this long after the last keystroke, so typing doesn't write the file on every key. */
@@ -29,37 +44,39 @@ public final class Notepad {
     /** How long a message over the window stays up. */
     private static final int MESSAGE_MILLIS = 4000;
 
-    private final Note note;
+    private static final boolean MAC = System.getProperty("os.name").startsWith("Mac");
+
+    private final DataFolder folder;
     private final String version;
+    private Note note;
     private final JFrame frame = new JFrame();
     private final JTextArea text = new JTextArea();
+    private final UndoManager undo = new UndoManager();
     private final JLabel status = new JLabel();
-    private final JButton checkForUpdates = new JButton("Check for updates");
+    private final JLabel updateStatus = new JLabel();
+    private final JMenuItem checkForUpdates = new JMenuItem("Check for Updates");
     private final Timer autosave = new Timer(SAVE_DELAY_MILLIS, event -> save());
     private final Overlay overlay = new Overlay();
     private final Timer hideOverlay = new Timer(MESSAGE_MILLIS, event -> overlay.setVisible(false));
 
-    private Notepad(Note note, String version, String savedText, Optional<Rectangle> window) {
-        this.note = note;
+    private Notepad(DataFolder folder, Note note, String version, String savedText, Optional<Rectangle> window) {
+        this.folder = folder;
         this.version = version;
-        text.setText(savedText);
+        this.note = note;
         text.setLineWrap(true);
         text.setWrapStyleWord(true);
-        // Every edit restarts the timer, so it only fires once typing pauses.
         autosave.setRepeats(false);
-        text.getDocument().addUndoableEditListener(event -> autosave.restart());
+        load(note, savedText);
 
-        status.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-        showStatus("Saved");
+        var statusLine = new JPanel(new BorderLayout());
+        statusLine.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        statusLine.add(status, BorderLayout.CENTER);
+        statusLine.add(updateStatus, BorderLayout.EAST);
 
         hideOverlay.setRepeats(false);
         frame.setGlassPane(overlay);
-        frame.setTitle("Phoenix Notes " + version);
+        frame.setJMenuBar(menuBar());
         frame.add(new JScrollPane(text), BorderLayout.CENTER);
-        var statusLine = new JPanel(new BorderLayout());
-        statusLine.add(status, BorderLayout.CENTER);
-        statusLine.add(checkForUpdates, BorderLayout.EAST);
-        checkForUpdates.putClientProperty("JButton.buttonType", "borderless");
         frame.add(statusLine, BorderLayout.SOUTH);
         // After a handoff, open exactly where the old version's window was.
         window.ifPresentOrElse(frame::setBounds, () -> {
@@ -77,12 +94,35 @@ public final class Notepad {
     }
 
     /** Saves the note now, and shows whether it worked. */
-    void save() {
+    boolean save() {
         try {
             note.write(text.getText());
             showStatus("Saved");
+            return true;
         } catch (IOException e) {
             showStatus("Couldn't save: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Opens a text file in place of the current note, which is saved first. Files that aren't UTF-8
+     * aren't opened, and the current note stays.
+     */
+    void open(Path file) {
+        autosave.stop();
+        if (!save()) {
+            return;
+        }
+        var opened = new Note(file);
+        try {
+            var savedText = opened.read();
+            opened.rememberIn(folder);
+            load(opened, savedText);
+        } catch (IOException e) {
+            overlay.show("Couldn't open " + file.getFileName(), false);
+            hideOverlay.restart();
+            showStatus(e.getMessage());
         }
     }
 
@@ -91,22 +131,23 @@ public final class Notepad {
      * the same place. Unlike {@link #save()}, fails if the note can't be saved, so nothing typed is lost.
      */
     public Rectangle saveForHandoff() throws IOException {
-        note.write(onEventThread(text::getText));
+        var current = onEventThread(() -> note);
+        current.write(onEventThread(text::getText));
         return onEventThread(frame::getBounds);
     }
 
-    /** What to do when "Check for updates" is clicked. */
+    /** What to do when Help → Check for Updates is chosen. */
     public void onCheckForUpdates(Runnable check) {
         SwingUtilities.invokeLater(() -> checkForUpdates.addActionListener(event -> check.run()));
     }
 
     /**
-     * Shows how a check for updates is going on its button: "Checking…" while it runs, which can't be
-     * clicked again, then the result, which can.
+     * Shows how a check for updates is going on the status line: "Checking…" while it runs, when it
+     * can't be started again, then the result.
      */
     public void showCheck(String result, boolean done) {
         SwingUtilities.invokeLater(() -> {
-            checkForUpdates.setText(result);
+            updateStatus.setText(result);
             checkForUpdates.setEnabled(done);
         });
     }
@@ -140,16 +181,90 @@ public final class Notepad {
         return text;
     }
 
+    public JLabel updateStatus() {
+        return updateStatus;
+    }
+
     JLabel status() {
         return status;
     }
 
-    public JButton checkForUpdates() {
-        return checkForUpdates;
-    }
-
     Overlay overlay() {
         return overlay;
+    }
+
+    UndoManager undo() {
+        return undo;
+    }
+
+    /**
+     * Shows a note's text in a fresh document, so loading it is neither an edit to undo nor a reason
+     * to save. Edits after that restart the autosave timer, so it only fires once typing pauses.
+     */
+    private void load(Note opened, String savedText) {
+        note = opened;
+        text.setDocument(new PlainDocument());
+        text.setText(savedText);
+        text.setCaretPosition(0);
+        text.getDocument().addUndoableEditListener(event -> {
+            undo.addEdit(event.getEdit());
+            autosave.restart();
+        });
+        undo.discardAllEdits();
+        var name = note.file().equals(folder.note()) ? "" : note.file().getFileName() + " — ";
+        frame.setTitle(name + "Phoenix Notes " + version);
+        showStatus("Saved");
+    }
+
+    /**
+     * File, Edit and Help, with the usual shortcuts: ⌘ on macOS, Ctrl elsewhere. On macOS they're in
+     * the menu bar at the top of the screen, which also has Quit; elsewhere they're in the window.
+     */
+    private JMenuBar menuBar() {
+        var file = new JMenu("File");
+        file.add(item("Open…", KeyEvent.VK_O, 0, event -> chooseFile()));
+        file.add(item("Save", KeyEvent.VK_S, 0, event -> save()));
+        if (!MAC) {
+            file.addSeparator();
+            file.add(item(
+                    "Exit", 0, 0, event -> frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))));
+        }
+
+        var edit = new JMenu("Edit");
+        edit.add(item("Undo", KeyEvent.VK_Z, 0, event -> {
+            if (undo.canUndo()) {
+                undo.undo();
+            }
+        }));
+        edit.add(item("Redo", MAC ? KeyEvent.VK_Z : KeyEvent.VK_Y, MAC ? InputEvent.SHIFT_DOWN_MASK : 0, event -> {
+            if (undo.canRedo()) {
+                undo.redo();
+            }
+        }));
+        edit.addSeparator();
+        edit.add(item("Cut", KeyEvent.VK_X, 0, new DefaultEditorKit.CutAction()));
+        edit.add(item("Copy", KeyEvent.VK_C, 0, new DefaultEditorKit.CopyAction()));
+        edit.add(item("Paste", KeyEvent.VK_V, 0, new DefaultEditorKit.PasteAction()));
+        edit.addSeparator();
+        edit.add(item("Select All", KeyEvent.VK_A, 0, event -> text.selectAll()));
+
+        var help = new JMenu("Help");
+        help.add(checkForUpdates);
+
+        var bar = new JMenuBar();
+        bar.add(file);
+        bar.add(edit);
+        bar.add(help);
+        return bar;
+    }
+
+    /** Asks which file to open, with the OS's own dialog. */
+    private void chooseFile() {
+        var dialog = new FileDialog(frame, "Open", FileDialog.LOAD);
+        dialog.setVisible(true);
+        if (dialog.getFile() != null) {
+            open(Path.of(dialog.getDirectory(), dialog.getFile()));
+        }
     }
 
     private void showStatus(String message) {
@@ -157,14 +272,37 @@ public final class Notepad {
     }
 
     /**
-     * Builds and shows the window on Swing's event thread. Opens at
-     * {@code window} if given (after a handoff), otherwise wherever the OS puts new windows.
+     * A menu item with a shortcut: {@code key} with ⌘ (macOS) or Ctrl, plus any {@code extraModifiers}.
+     * A {@code key} of 0 means no shortcut.
      */
-    public static Notepad open(Note note, String version, Optional<Rectangle> window) throws IOException {
+    private static JMenuItem item(String name, int key, int extraModifiers, ActionListener action) {
+        var item = new JMenuItem(name);
+        if (key != 0) {
+            var menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+            item.setAccelerator(KeyStroke.getKeyStroke(key, menuKey | extraModifiers));
+        }
+        item.addActionListener(action);
+        return item;
+    }
+
+    /**
+     * Builds and shows the window on Swing's event thread, with the note opened last (or the app's own
+     * note). Opens at {@code window} if given (after a handoff), otherwise wherever the OS puts new
+     * windows.
+     */
+    public static Notepad open(DataFolder folder, String version, Optional<Rectangle> window) throws IOException {
+        // On macOS: menus in the screen's menu bar, under the app's name. Must be set before Swing starts.
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
+        System.setProperty("apple.awt.application.name", "Phoenix Notes");
         FlatLightLaf.setup();
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_QUIT_STRATEGY)) {
+            // ⌘Q closes the window, which saves, instead of exiting straight away.
+            Desktop.getDesktop().setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
+        }
+        var note = Note.last(folder);
         var savedText = note.read();
         return onEventThread(() -> {
-            var notepad = new Notepad(note, version, savedText, window);
+            var notepad = new Notepad(folder, note, version, savedText, window);
             notepad.frame.setVisible(true);
             return notepad;
         });

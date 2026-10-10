@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
  *
  * <pre>
  * note.txt                       the note
+ * open-file                      the path of the text file open instead, if any
  * app.lock                       held while the app runs
  * keys.json                      the newest trusted key chain
  * current                        the version to run, e.g. "1.0.16"
@@ -23,6 +24,10 @@ public record DataFolder(Path path) {
 
     public Path note() {
         return path.resolve("note.txt");
+    }
+
+    public Path openFile() {
+        return path.resolve("open-file");
     }
 
     public Path lock() {

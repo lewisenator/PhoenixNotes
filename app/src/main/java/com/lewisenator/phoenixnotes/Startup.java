@@ -1,7 +1,6 @@
 package com.lewisenator.phoenixnotes;
 
 import com.lewisenator.phoenixnotes.signing.UntrustedException;
-import com.lewisenator.phoenixnotes.ui.Note;
 import com.lewisenator.phoenixnotes.ui.Notepad;
 import com.lewisenator.phoenixnotes.update.Download;
 import com.lewisenator.phoenixnotes.update.Handoff;
@@ -116,7 +115,7 @@ public final class Startup {
         if (alreadyRunning || handedOff) {
             return this;
         }
-        var opened = Notepad.open(new Note(dataFolder.note()), version, window);
+        var opened = Notepad.open(dataFolder, version, window);
         notepad = Optional.of(opened);
         Log.step("open notepad", "ok");
         if (handingOver) {
