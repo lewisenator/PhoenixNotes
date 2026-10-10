@@ -13,6 +13,8 @@ java {
 
 dependencies {
     implementation(project(":signing"))
+    implementation(libs.flatlaf)
+    implementation(libs.picocli)
     errorprone(libs.errorprone)
 
     testImplementation(platform(libs.junit.bom))
@@ -23,6 +25,8 @@ dependencies {
 
 application {
     mainClass = "com.lewisenator.phoenixnotes.Main"
+    // FlatLaf loads a small native library for window decorations; Java 24+ asks apps to opt in.
+    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
 // Quality checks, all run by `./gradlew check`. The same block is in signing/build.gradle.kts,
