@@ -1,5 +1,6 @@
 package com.lewisenator.phoenixnotes.ui;
 
+import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.lewisenator.phoenixnotes.DataFolder;
 import java.awt.BorderLayout;
@@ -301,7 +302,7 @@ public final class Notepad {
         // On macOS: menus in the screen's menu bar, under the app's name. Must be set before Swing starts.
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         System.setProperty("apple.awt.application.name", "Phoenix Notes");
-        FlatLightLaf.setup();
+        FlatDarkLaf.setup();
         if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_QUIT_STRATEGY)) {
             // ⌘Q closes the window, which saves, instead of exiting straight away.
             Desktop.getDesktop().setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
