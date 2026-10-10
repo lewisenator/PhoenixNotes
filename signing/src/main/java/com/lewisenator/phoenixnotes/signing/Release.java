@@ -14,6 +14,8 @@ import java.util.HexFormat;
 import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * One release of the app, as described by its signed manifest: the version, where to download its
@@ -23,6 +25,11 @@ import tools.jackson.core.JacksonException;
  * the signature before reading anything.
  */
 public record Release(String version, URI url, String sha256, long size) {
+
+    /** JSON settings for manifests and keys.json. Newer releases may add fields; older apps ignore them. */
+    static final JsonMapper JSON = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private static final Pattern VERSION = Pattern.compile("\\d+(\\.\\d+)*");
     private static final Pattern SHA256 = Pattern.compile("[0-9a-f]{64}");
@@ -49,7 +56,7 @@ public record Release(String version, URI url, String sha256, long size) {
 
     /** The manifest's JSON: the exact bytes that get signed. */
     public byte[] toJson() {
-        return Json.MAPPER.writeValueAsBytes(this);
+        return JSON.writeValueAsBytes(this);
     }
 
     /** Describes a jar for a new release. */
@@ -71,7 +78,7 @@ public record Release(String version, URI url, String sha256, long size) {
 
     private static Release parse(byte[] manifest) throws UntrustedException {
         try {
-            var release = Json.MAPPER.readValue(manifest, Release.class);
+            var release = JSON.readValue(manifest, Release.class);
             if (release == null) {
                 throw new UntrustedException("Release manifest is empty");
             }

@@ -39,7 +39,7 @@ interface Vault {
 
             @Override
             public void save(String item, KeyPair keys) throws IOException {
-                var json = Json.MAPPER.writeValueAsString(Map.of(
+                var json = Release.JSON.writeValueAsString(Map.of(
                         "title",
                         item,
                         "category",

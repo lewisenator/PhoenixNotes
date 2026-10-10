@@ -118,7 +118,7 @@ public record KeyChain(List<Generation> generations) {
     }
 
     public byte[] toJson() {
-        return Json.MAPPER.writeValueAsBytes(this);
+        return Release.JSON.writeValueAsBytes(this);
     }
 
     /** Signs a new generation, then checks it like any app would: a wrong private key fails here. */
@@ -145,7 +145,7 @@ public record KeyChain(List<Generation> generations) {
 
     private static KeyChain parse(byte[] json) throws UntrustedException {
         try {
-            var chain = Json.MAPPER.readValue(json, KeyChain.class);
+            var chain = Release.JSON.readValue(json, KeyChain.class);
             if (chain == null) {
                 throw new UntrustedException("keys.json is empty");
             }
